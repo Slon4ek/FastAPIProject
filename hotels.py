@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Query, Body
-from models import Hotel
+from fastapi import APIRouter, Query
+from schemas.hotels import Hotel, HotelPatch
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -38,7 +38,7 @@ def delete_hotel(hotel_id: int):
 
 @router.post('', summary='Добавить отель')
 def create_hotel(
-        hotel_data: Hotel = Body()
+        hotel_data: Hotel
 ):
     global hotels
     hotels.append({
@@ -50,7 +50,7 @@ def create_hotel(
 
 
 @router.put('/{hotel_id}', summary='Полное обновление данных об отеле')
-def update_hotel(hotel_id: int, hotel_data: Hotel = Body()):
+def update_hotel(hotel_id: int, hotel_data: Hotel):
     global hotels
     for hotel in hotels:
         if hotel['id'] == hotel_id:
@@ -61,16 +61,14 @@ def update_hotel(hotel_id: int, hotel_data: Hotel = Body()):
 
 @router.patch('/{hotel_id}', summary='Частичное обновление данных об отеле')
 def partial_update_hotel(
-        hotel_id: int,
-        title: str | None = Body(None, description='Название отеля'),
-        stars: int | None = Body(None, description='Количество звезд')
+        hotel_id: int, hotel_data: HotelPatch
 ):
     global hotels
     for hotel in hotels:
         if hotel['id'] == hotel_id:
-            if title:
-                hotel['title'] = title
-            if stars:
-                hotel['stars'] = stars
+            if hotel_data.title:
+                hotel['title'] = hotel_data.title
+            if hotel_data.stars:
+                hotel['stars'] = hotel_data.stars
             return {'message': 'Отель успешно обновлен'}
     return {'message': 'Отель не найден'}

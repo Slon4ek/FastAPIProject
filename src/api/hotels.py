@@ -2,93 +2,87 @@ from fastapi import APIRouter, Query, Body
 from src.schemas.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
 
-router = APIRouter(prefix='/hotels', tags=['Отели'])
+router = APIRouter(prefix="/hotels", tags=["Отели"])
 
 
 hotels = [
-    {'id': 1, 'title': 'Hilton', 'stars': 5},
-    {'id': 2, 'title': 'Sheraton', 'stars': 4},
-    {'id': 3, 'title': 'December', 'stars': 4},
-    {'id': 4, 'title': 'Four Seasons', 'stars': 3},
-    {'id': 5, 'title': 'Marriott Hotel', 'stars': 2},
-    {'id': 6, 'title': 'Marriott', 'stars': 2},
-    {'id': 7, 'title': 'Ritz-Carlton', 'stars': 1},
+    {"id": 1, "title": "Hilton", "stars": 5},
+    {"id": 2, "title": "Sheraton", "stars": 4},
+    {"id": 3, "title": "December", "stars": 4},
+    {"id": 4, "title": "Four Seasons", "stars": 3},
+    {"id": 5, "title": "Marriott Hotel", "stars": 2},
+    {"id": 6, "title": "Marriott", "stars": 2},
+    {"id": 7, "title": "Ritz-Carlton", "stars": 1},
 ]
 
-@router.get('', summary='Получить список отелей')
+
+@router.get("", summary="Получить список отелей")
 def get_hotels(
-        pagination: PaginationDep,
-        stars: int | None = Query(None, description='Фильтр по количеству звезд'),
-        title: str | None = Query(None, description='Фильтр по названию отеля'),
+    pagination: PaginationDep,
+    stars: int | None = Query(None, description="Фильтр по количеству звезд"),
+    title: str | None = Query(None, description="Фильтр по названию отеля"),
 ):
     hotels_ = []
     for hotel in hotels:
-        if stars and hotel['stars'] != stars:
+        if stars and hotel["stars"] != stars:
             continue
-        if title and hotel['title'] != title:
+        if title and hotel["title"] != title:
             continue
         hotels_.append(hotel)
-    hotels_ = hotels_[(pagination.page - 1) * pagination.per_page:pagination.page * pagination.per_page]
+    hotels_ = hotels_[
+        (pagination.page - 1)
+        * pagination.per_page : pagination.page
+        * pagination.per_page
+    ]
     return hotels_
 
 
-@router.delete('/{hotel_id}', summary='Удалить отель')
+@router.delete("/{hotel_id}", summary="Удалить отель")
 def delete_hotel(hotel_id: int):
     global hotels
-    hotels = [hotel for hotel in hotels if hotel['id'] != hotel_id]
-    return {'message': 'Отель успешно удален'}
+    hotels = [hotel for hotel in hotels if hotel["id"] != hotel_id]
+    return {"message": "Отель успешно удален"}
 
 
-@router.post('', summary='Добавить отель')
+@router.post("", summary="Добавить отель")
 def create_hotel(
-        hotel_data: Hotel = Body(
-            openapi_examples={
-                '1': {
-                    'summary': 'Сочи',
-                    'value': {
-                        'title': 'Сочи',
-                        'stars': 5
-                    }
-                },
-                '2': {
-                    'summary': 'Москва',
-                    'value': {
-                        'title': 'Москва',
-                        'stars': 4
-                    }
-                }
-            }
-        )
+    hotel_data: Hotel = Body(
+        openapi_examples={
+            "1": {"summary": "Сочи", "value": {"title": "Сочи", "stars": 5}},
+            "2": {"summary": "Москва", "value": {"title": "Москва", "stars": 4}},
+        }
+    )
 ):
     global hotels
-    hotels.append({
-        'id': hotels[-1]['id'] + 1,
-        'title': hotel_data.title,
-        'stars': hotel_data.stars
-    })
-    return {'message': 'Отель успешно добавлен'}
+    hotels.append(
+        {
+            "id": hotels[-1]["id"] + 1,
+            "title": hotel_data.title,
+            "stars": hotel_data.stars,
+        }
+    )
+    return {"message": "Отель успешно добавлен"}
 
 
-@router.put('/{hotel_id}', summary='Полное обновление данных об отеле')
+@router.put("/{hotel_id}", summary="Полное обновление данных об отеле")
 def update_hotel(hotel_id: int, hotel_data: Hotel):
     global hotels
     for hotel in hotels:
-        if hotel['id'] == hotel_id:
-            hotel['title'] = hotel_data.title
-            hotel['stars'] = hotel_data.stars
-            return {'message': 'Отель успешно обновлен'}
-    return {'message': 'Отель не найден'}
+        if hotel["id"] == hotel_id:
+            hotel["title"] = hotel_data.title
+            hotel["stars"] = hotel_data.stars
+            return {"message": "Отель успешно обновлен"}
+    return {"message": "Отель не найден"}
 
-@router.patch('/{hotel_id}', summary='Частичное обновление данных об отеле')
-def partial_update_hotel(
-        hotel_id: int, hotel_data: HotelPatch
-):
+
+@router.patch("/{hotel_id}", summary="Частичное обновление данных об отеле")
+def partial_update_hotel(hotel_id: int, hotel_data: HotelPatch):
     global hotels
     for hotel in hotels:
-        if hotel['id'] == hotel_id:
+        if hotel["id"] == hotel_id:
             if hotel_data.title:
-                hotel['title'] = hotel_data.title
+                hotel["title"] = hotel_data.title
             if hotel_data.stars:
-                hotel['stars'] = hotel_data.stars
-            return {'message': 'Отель успешно обновлен'}
-    return {'message': 'Отель не найден'}
+                hotel["stars"] = hotel_data.stars
+            return {"message": "Отель успешно обновлен"}
+    return {"message": "Отель не найден"}

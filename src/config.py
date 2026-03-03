@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # pathlib позволяет формировать путь
         # с помощью оператора "/", аналогично os.path.join()
-        env_file=BASE_DIR / ".env",
+        env_file=BASE_DIR
+        / ".env",
     )
+
 
 settings = Settings()

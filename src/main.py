@@ -10,6 +10,7 @@ from src.api.hotels import router as hotels_router
 app = FastAPI(docs_url=None, redoc_url=None)
 app.include_router(hotels_router)
 
+
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
     return get_swagger_ui_html(
@@ -35,5 +36,5 @@ async def redoc_html():
     )
 
 
-if __name__ == '__main__':
-    uvicorn.run('main:app', reload=True)
+if __name__ == "__main__":
+    uvicorn.run("main:app", reload=True)

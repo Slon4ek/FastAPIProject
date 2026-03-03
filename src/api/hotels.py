@@ -14,9 +14,22 @@ async def get_hotels(
     pagination: PaginationDep,
     stars: int | None = Query(None, description="Фильтр по количеству звезд"),
     title: str | None = Query(None, description="Фильтр по названию отеля"),
+    location: str | None = Query(None, description="Фильтр по адресу")
 ):
+    per_page = pagination.per_page or 5
     async with async_session_maker() as session:
         qwery = select(HotelsModel)
+        if stars:
+            qwery = qwery.filter_by(stars=stars)
+        if title:
+            qwery = qwery.filter_by(title=title)
+        if location:
+            qwery = qwery.filter_by(location=location)
+        qwery = (
+            qwery
+            .limit(per_page)
+            .offset(per_page * (pagination.page - 1))
+        )
         result = await session.execute(qwery)
         hotels = result.scalars().all()
     return hotels

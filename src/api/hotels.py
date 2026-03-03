@@ -9,36 +9,17 @@ from src.api.dependencies import PaginationDep
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
 
-hotels = [
-    {"id": 1, "title": "Hilton", "stars": 5},
-    {"id": 2, "title": "Sheraton", "stars": 4},
-    {"id": 3, "title": "December", "stars": 4},
-    {"id": 4, "title": "Four Seasons", "stars": 3},
-    {"id": 5, "title": "Marriott Hotel", "stars": 2},
-    {"id": 6, "title": "Marriott", "stars": 2},
-    {"id": 7, "title": "Ritz-Carlton", "stars": 1},
-]
-
-
 @router.get("", summary="Получить список отелей")
-def get_hotels(
+async def get_hotels(
     pagination: PaginationDep,
     stars: int | None = Query(None, description="Фильтр по количеству звезд"),
     title: str | None = Query(None, description="Фильтр по названию отеля"),
 ):
-    hotels_ = []
-    for hotel in hotels:
-        if stars and hotel["stars"] != stars:
-            continue
-        if title and hotel["title"] != title:
-            continue
-        hotels_.append(hotel)
-    hotels_ = hotels_[
-        (pagination.page - 1)
-        * pagination.per_page : pagination.page
-        * pagination.per_page
-    ]
-    return hotels_
+    async with async_session_maker() as session:
+        qwery = select(HotelsModel)
+        result = await session.execute(qwery)
+        hotels = result.scalars().all()
+    return hotels
 
 
 @router.delete("/{hotel_id}", summary="Удалить отель")

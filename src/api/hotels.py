@@ -1,4 +1,8 @@
 from fastapi import APIRouter, Query, Body
+from sqlalchemy import insert, select
+
+from src.database import async_session_maker, engine
+from src.models.hotels import HotelsModel
 from src.schemas.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
 

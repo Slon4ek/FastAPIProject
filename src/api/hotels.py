@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query, Body
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, func
 
 from src.database import async_session_maker, engine
 from src.models.hotels import HotelsModel
@@ -22,14 +22,15 @@ async def get_hotels(
         if stars:
             qwery = qwery.filter_by(stars=stars)
         if title:
-            qwery = qwery.filter_by(title=title)
+            qwery = qwery.filter(func.lower(HotelsModel.title).contains(title.strip().lower()))
         if location:
-            qwery = qwery.filter_by(location=location)
+            qwery = qwery.filter(func.lower(HotelsModel.location).contains(location.strip().lower()))
         qwery = (
             qwery
             .limit(per_page)
             .offset(per_page * (pagination.page - 1))
         )
+        print(qwery.compile(engine, compile_kwargs={"literal_binds": True}))
         result = await session.execute(qwery)
         hotels = result.scalars().all()
     return hotels

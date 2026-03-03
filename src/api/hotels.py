@@ -45,22 +45,30 @@ def delete_hotel(hotel_id: int):
 
 
 @router.post("", summary="Добавить отель")
-def create_hotel(
+async def create_hotel(
     hotel_data: Hotel = Body(
         openapi_examples={
-            "1": {"summary": "Сочи", "value": {"title": "Сочи", "stars": 5}},
-            "2": {"summary": "Москва", "value": {"title": "Москва", "stars": 4}},
+            "1": {
+                "summary": "Hilton Hotel", "value":
+                    {
+                        "title": "Hilton", "stars": 5, "location": "г. Сочи, ул. Моря, д. 1"
+                     }
+            },
+            "2":
+                {
+                    "summary": "Four Seasons Hotel", "value":
+                    {
+                        "title": "Four Seasons", "stars": 4, "location": "г. Москва, ул. Ленина, д. 1"
+                     }
+                 },
         }
     )
 ):
-    global hotels
-    hotels.append(
-        {
-            "id": hotels[-1]["id"] + 1,
-            "title": hotel_data.title,
-            "stars": hotel_data.stars,
-        }
-    )
+    async with async_session_maker() as session:
+        add_hotel_stmt = insert(HotelsModel).values(**hotel_data.model_dump())
+        await session.execute(add_hotel_stmt)
+        # print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
+        await session.commit()
     return {"message": "Отель успешно добавлен"}
 
 

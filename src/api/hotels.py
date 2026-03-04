@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Query, Body
-from sqlalchemy import insert, select, func
 
-from src.database import async_session_maker, engine
-from src.models.hotels import HotelsModel
+from src.database import async_session_maker
+from src.repositories.hotels import HotelsRepository
 from src.schemas.hotels import Hotel, HotelPatch
 from src.api.dependencies import PaginationDep
 
@@ -18,28 +17,20 @@ async def get_hotels(
 ):
     per_page = pagination.per_page or 5
     async with async_session_maker() as session:
-        qwery = select(HotelsModel)
-        if stars:
-            qwery = qwery.filter_by(stars=stars)
-        if title:
-            qwery = qwery.filter(func.lower(HotelsModel.title).contains(title.strip().lower()))
-        if location:
-            qwery = qwery.filter(func.lower(HotelsModel.location).contains(location.strip().lower()))
-        qwery = (
-            qwery
-            .limit(per_page)
-            .offset(per_page * (pagination.page - 1))
+        return await HotelsRepository(session).get_all(
+            stars=stars,
+            title=title,
+            location=location,
+            limit=per_page,
+            offset=per_page * (pagination.page - 1)
         )
-        print(qwery.compile(engine, compile_kwargs={"literal_binds": True}))
-        result = await session.execute(qwery)
-        hotels = result.scalars().all()
-    return hotels
 
 
 @router.delete("/{hotel_id}", summary="Удалить отель")
-def delete_hotel(hotel_id: int):
-    global hotels
-    hotels = [hotel for hotel in hotels if hotel["id"] != hotel_id]
+async def delete_hotel(hotel_id: int):
+    async with async_session_maker() as session:
+        await HotelsRepository(session).delete(id=hotel_id)
+        await session.commit()
     return {"message": "Отель успешно удален"}
 
 
@@ -64,32 +55,28 @@ async def create_hotel(
     )
 ):
     async with async_session_maker() as session:
-        add_hotel_stmt = insert(HotelsModel).values(**hotel_data.model_dump())
-        await session.execute(add_hotel_stmt)
-        # print(add_hotel_stmt.compile(engine, compile_kwargs={"literal_binds": True}))
+        new_hotel = await HotelsRepository(session).add(hotel_data)
         await session.commit()
-    return {"message": "Отель успешно добавлен"}
+    return {"Status": "Ok", "data": new_hotel}
 
 
 @router.put("/{hotel_id}", summary="Полное обновление данных об отеле")
-def update_hotel(hotel_id: int, hotel_data: Hotel):
-    global hotels
-    for hotel in hotels:
-        if hotel["id"] == hotel_id:
-            hotel["title"] = hotel_data.title
-            hotel["stars"] = hotel_data.stars
-            return {"message": "Отель успешно обновлен"}
-    return {"message": "Отель не найден"}
+async def update_hotel(hotel_id: int, hotel_data: Hotel):
+    async with async_session_maker() as session:
+        await HotelsRepository(session).edit(hotel_data, id=hotel_id)
+        await session.commit()
+    return {"message": "Отель успешно обновлен"}
 
 
 @router.patch("/{hotel_id}", summary="Частичное обновление данных об отеле")
 def partial_update_hotel(hotel_id: int, hotel_data: HotelPatch):
-    global hotels
-    for hotel in hotels:
-        if hotel["id"] == hotel_id:
-            if hotel_data.title:
-                hotel["title"] = hotel_data.title
-            if hotel_data.stars:
-                hotel["stars"] = hotel_data.stars
-            return {"message": "Отель успешно обновлен"}
-    return {"message": "Отель не найден"}
+    # global hotels
+    # for hotel in hotels:
+    #     if hotel["id"] == hotel_id:
+    #         if hotel_data.title:
+    #             hotel["title"] = hotel_data.title
+    #         if hotel_data.stars:
+    #             hotel["stars"] = hotel_data.stars
+    #         return {"message": "Отель успешно обновлен"}
+    # return {"message": "Отель не найден"}
+    pass

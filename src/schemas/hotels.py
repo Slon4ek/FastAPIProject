@@ -1,11 +1,13 @@
 from pydantic import BaseModel, Field
 
 
-class Hotel(BaseModel):
+class HotelAdd(BaseModel):
     title: str
     stars: int
     location: str
 
+class Hotel(HotelAdd):
+    id: int
 
 class HotelPatch(BaseModel):
     title: str = Field(None, description="Название отеля")

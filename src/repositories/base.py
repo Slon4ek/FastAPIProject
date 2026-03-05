@@ -1,29 +1,18 @@
 from fastapi import HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, insert, update
-from sqlalchemy.exc import MultipleResultsFound
+from sqlalchemy import select, insert, update, delete
+from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.database import engine
 
 
 class BaseRepository:
-    """
-    A base repository class for database operations.
-
-    This class provides basic CRUD operations using SQLAlchemy's async session.
-    It is intended to be subclassed by specific repository classes that define
-    the model attribute to specify the SQLAlchemy model to operate on.
-
-    Attributes:
-        model: The SQLAlchemy model class associated with this repository.
-        session: The SQLAlchemy async session used for database operations.
-
-    Methods:
-        get_all: Retrieves all records from the database for the associated model.
-        get_one_or_none: Retrieves a single record based on filter criteria, or None if not found.
-        add: Adds a new record to the database and returns the created instance.
-    """
 
     model = None
+    name = None
+    table_name = None
+    schema: BaseModel = None
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -32,7 +21,15 @@ class BaseRepository:
     async def get_all(self, *args, **kwargs):
         query = select(self.model)
         result = await self.session.execute(query)
-        return result.scalars().all()
+        return [self.schema.model_validate(item, from_attributes=True) for item in result.scalars().all()]
+
+    async def get_by_id(self, obj_id: int):
+        qwery = select(self.model).filter_by(id=obj_id)
+        result = await self.session.execute(qwery)
+        try:
+            return self.schema.model_validate(result.scalars().one(), from_attributes=True)
+        except NoResultFound:
+            raise HTTPException(status_code=404, detail=f"{self.name} not found")
 
     async def get_one_or_none(self, **filter_by):
         query = select(self.model).filter_by(**filter_by)
@@ -40,21 +37,27 @@ class BaseRepository:
         try:
             result = result.scalars().one_or_none()
             if result is None:
-                raise HTTPException(status_code=404, detail="Hotel not found")
-            return result
+                return None
+            return self.schema.model_validate(result, from_attributes=True)
         except MultipleResultsFound:
-            raise HTTPException(status_code=400, detail="Multiple hotels found")
+            raise HTTPException(status_code=400, detail=f"Multiple {self.table_name} found")
 
     async def add(self,  data: BaseModel) -> BaseModel:
         insert_data_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
         result = await self.session.execute(insert_data_stmt)
-        return result.scalar_one()
+        return self.schema.model_validate(result.scalar_one(), from_attributes=True)
 
-    async def edit(self, data: BaseModel, **filter_by) -> None:
-        obj_for_edit = await self.get_one_or_none(**filter_by)
-        update_stmt = update(self.model).where(self.model.id == obj_for_edit.id).values(**data.model_dump())
+    async def edit(self, data: BaseModel, for_patch: bool = False, **filter_by) -> None:
+        for_edit = await self.get_one_or_none(**filter_by)
+        if for_edit is None:
+            raise HTTPException(status_code=404, detail=f"{self.name} not found")
+        update_stmt = (
+            update(self.model)
+            .where(self.model.id == for_edit.id)
+            .values(**data.model_dump(exclude_unset=for_patch))
+        )
         await self.session.execute(update_stmt)
 
     async def delete(self, **filter_by) -> None:
-        hotel_for_delete = await self.get_one_or_none(**filter_by)
-        await self.session.delete(hotel_for_delete)
+        stmt = delete(self.model).filter_by(**filter_by)
+        await self.session.execute(stmt)

@@ -44,20 +44,24 @@ async def delete_hotel(hotel_id: int):
 async def create_hotel(
     hotel_data: HotelAdd = Body(
         openapi_examples={
-            "1": {
-                "summary": "Hilton Hotel", "value":
-                    {
-                        "title": "Hilton", "stars": 5, "location": "г. Сочи, ул. Моря, д. 1"
-                     }
+            "Hilton Hotel": {
+                "summary": "Hilton Hotel",
+                "value": {
+                    "title": "Hilton",
+                    "stars": 5,
+                    "location": "г. Сочи, ул. Моря, д. 1"
+                }
             },
-            "2":
-                {
-                    "summary": "Four Seasons Hotel", "value":
-                    {
-                        "title": "Four Seasons", "stars": 4, "location": "г. Москва, ул. Ленина, д. 1"
-                     }
-                 },
+            "Four Seasons Hotel": {
+                "summary": "Four Seasons Hotel",
+                "value": {
+                    "title": "Four Seasons",
+                    "stars": 4,
+                    "location": "г. Москва, ул. Ленина, д. 1"
+                }
+            }
         }
+
     )
 ):
     async with async_session_maker() as session:

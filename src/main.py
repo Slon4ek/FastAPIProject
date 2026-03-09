@@ -6,8 +6,11 @@ from fastapi.openapi.docs import (
     get_swagger_ui_oauth2_redirect_html,
 )
 from src.api.hotels import router as hotels_router
+from src.api.auth import router as authorization_router
 
 app = FastAPI(docs_url=None, redoc_url=None)
+app.include_router(authorization_router)
+
 app.include_router(hotels_router)
 
 

@@ -1,17 +1,38 @@
-from fastapi import APIRouter, HTTPException, Body
-from pwdlib import PasswordHash
+from fastapi import APIRouter, HTTPException, Body, Response
 from sqlalchemy.exc import IntegrityError
 
-from src.schemas.users import UserRequestAdd, UserAdd, User
+from src.api.dependencies import UserIdDep
+from src.schemas.users import UserRequestAdd, UserAdd, UserLogin
 from src.database import async_session_maker
 from src.repositories.users import UserRepository
+from src.services.auth import AuthService
 
 router = APIRouter(
     prefix="/auth",
     tags=["Авторизация и аутентификация"]
 )
 
-password_hash = PasswordHash.recommended()
+
+@router.post("/login")
+async def login_user(
+        data: UserLogin,
+        response: Response
+):
+    async with async_session_maker() as session:
+        user = await UserRepository(session).get_user_with_hashed_password(data.email)
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Такой email не зарегистрирован")
+        
+        if not AuthService().verify_password(data.password, user.hashed_password):
+            raise HTTPException(status_code=401, detail="Неверный пароль")
+        
+        access_token = AuthService().create_access_token({
+            "user_id": user.id
+        })
+        response.set_cookie(key="access_token", value=access_token)
+        return {"access_token": access_token}
+
 
 @router.post("/register")
 async def register_user(
@@ -40,7 +61,7 @@ async def register_user(
             }
         )
 ):
-    hashed_password = password_hash.hash(password=user.password)
+    hashed_password = AuthService().get_password_hash(password=user.password)
     new_user = UserAdd(
         username=user.username,
         email=user.email,
@@ -54,6 +75,23 @@ async def register_user(
             await session.commit()
         except IntegrityError:
             await session.rollback()
-            raise HTTPException(status_code=400, detail="User already exists")
+            raise HTTPException(status_code=400, detail="User with this email already exists")
 
     return {"message": "User registered successfully", "user": auth_user}
+
+
+@router.get("/me")
+async def get_me(
+        user_id: UserIdDep
+):
+    async with async_session_maker() as session:
+        user = await UserRepository(session).get_by_id(user_id)
+    return {"user": user}
+
+
+@router.post("/logout")
+async def logout_user(
+        response: Response
+):
+    response.delete_cookie("access_token")
+    return {"message": "User logged out successfully"}

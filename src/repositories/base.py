@@ -4,8 +4,6 @@ from sqlalchemy import select, insert, update, delete
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database import engine
-
 
 class BaseRepository:
 

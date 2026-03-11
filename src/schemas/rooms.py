@@ -1,19 +1,24 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
-class RoomAdd(BaseModel):
-    hotel_id: int
+class RoomAddRequest(BaseModel):
     title: str
-    description: str
+    description: str | None = None
     price: int
     quantity: int
+
+
+class RoomAdd(RoomAddRequest):
+    hotel_id: int
 
 
 class Room(RoomAdd):
     id: int
 
+    model_config = ConfigDict(from_attributes=True)
+
 class RoomEdit(BaseModel):
-    title: str = Field(None, description="Название номера")
-    description: str = Field(None, description="Описание номера")
-    price: int = Field(None, description="Цена за ночь")
-    quantity: int = Field(None, description="Количество номеров")
+    title: str | None = None
+    description: str | None = None
+    price: int | None = None
+    quantity: int | None = None

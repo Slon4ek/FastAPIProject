@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class BaseRepository:
-
     model = None
     name = None
     table_name = None
@@ -15,11 +14,13 @@ class BaseRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-
-    async def get_all(self, *args, **kwargs):
-        query = select(self.model)
+    async def get_all_by_filter(self, **filter_by) -> list[BaseModel]:
+        query = select(self.model).filter_by(**filter_by)
         result = await self.session.execute(query)
         return [self.schema.model_validate(item, from_attributes=True) for item in result.scalars().all()]
+
+    async def get_all(self) -> list[BaseModel]:
+        return await self.get_all_by_filter()
 
     async def get_by_id(self, obj_id: int):
         qwery = select(self.model).filter_by(id=obj_id)
@@ -40,7 +41,7 @@ class BaseRepository:
         except MultipleResultsFound:
             raise HTTPException(status_code=400, detail=f"Multiple {self.table_name} found")
 
-    async def add(self,  data: BaseModel) -> BaseModel:
+    async def add(self, data: BaseModel) -> BaseModel:
         insert_data_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
         result = await self.session.execute(insert_data_stmt)
         return self.schema.model_validate(result.scalar_one(), from_attributes=True)

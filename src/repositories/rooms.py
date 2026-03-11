@@ -11,8 +11,4 @@ class RoomsRepository(BaseRepository):
     table_name = "rooms"
     schema = Room
 
-    async def get_all(self, hotel_id: int):
-        query = select(self.model).filter_by(hotel_id=hotel_id)
-        result = await self.session.execute(query)
-        return [room for room in result.scalars().all()]
 

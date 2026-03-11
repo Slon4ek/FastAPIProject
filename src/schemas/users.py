@@ -1,14 +1,15 @@
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
 
 
-class UserRequestAdd(BaseModel):
-    username: str = Field(examples=[
-        "user1", "user2"
-    ])
+class UserLogin(BaseModel):
     email: EmailStr
-    first_name: str | None = Field(None, description="Имя (Не обязательно)")
-    last_name: str | None = Field(None, description="Фамилия (Не обязательно)")
     password: str
+
+
+class UserRequestAdd(UserLogin):
+    username: str
+    first_name: str | None = Field(None)
+    last_name: str | None = Field(None)
 
 
 class UserAdd(BaseModel):
@@ -27,3 +28,6 @@ class User(BaseModel):
     last_name: str | None = Field(None)
 
     model_config = ConfigDict(from_attributes=True)
+
+class UserWithHashedPassword(User):
+    hashed_password: str

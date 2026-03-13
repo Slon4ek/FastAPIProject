@@ -1,10 +1,8 @@
 from fastapi import APIRouter, HTTPException, Body, Response
 from sqlalchemy.exc import IntegrityError
 
-from src.api.dependencies import UserIdDep
+from src.api.dependencies import UserIdDep, DBDep
 from src.schemas.users import UserRequestAdd, UserAdd, UserLogin
-from src.database import async_session_maker
-from src.repositories.users import UserRepository
 from src.services.auth import AuthService
 
 router = APIRouter(
@@ -20,20 +18,20 @@ router = APIRouter(
                 "генерирует токен доступа и устанавливает его в куки"
 )
 async def login_user(
+        db: DBDep,
         data: UserLogin,
         response: Response
 ):
-    async with async_session_maker() as session:
-        user = await UserRepository(session).get_user_with_hashed_password(data.email)
+    user = await db.users.get_user_with_hashed_password(data.email)
         
-        if not user or not AuthService().verify_password(data.password, user.hashed_password):
-            raise HTTPException(status_code=401, detail="Неверный логин или пароль")
+    if not user or not AuthService().verify_password(data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Неверный логин или пароль")
 
-        access_token = AuthService().create_access_token({
-            "user_id": user.id
-        })
-        response.set_cookie(key="access_token", value=access_token)
-        return {"access_token": access_token}
+    access_token = AuthService().create_access_token({
+        "user_id": user.id
+    })
+    response.set_cookie(key="access_token", value=access_token)
+    return {"access_token": access_token}
 
 
 @router.post(
@@ -42,6 +40,7 @@ async def login_user(
     description="Регистрация нового пользователя. first_name, last_name - не обязательные поля"
 )
 async def register_user(
+        db: DBDep,
         user: UserRequestAdd = Body(
             openapi_examples={
                 "user1": {
@@ -75,13 +74,11 @@ async def register_user(
         last_name=user.last_name,
         hashed_password=hashed_password
     )
-    async with async_session_maker() as session:
-        try:
-            auth_user = await UserRepository(session).add(new_user)
-            await session.commit()
-        except IntegrityError:
-            await session.rollback()
-            raise HTTPException(status_code=400, detail="User with this email already exists")
+    try:
+        auth_user = await db.users.add(new_user)
+        await db.commit()
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
 
     return {"message": "User registered successfully", "user": auth_user}
 
@@ -92,10 +89,10 @@ async def register_user(
     description="Получение информации о текущем пользователе по токену доступа"
 )
 async def get_me(
+        db: DBDep,
         user_id: UserIdDep
 ):
-    async with async_session_maker() as session:
-        user = await UserRepository(session).get_by_id(user_id)
+    user = await db.users.get_one_or_none(id=user_id)
     return {"user": user}
 
 

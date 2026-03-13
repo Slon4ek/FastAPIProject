@@ -7,8 +7,6 @@ from src.schemas.rooms import Room
 
 class RoomsRepository(BaseRepository):
     model = RoomsOrm
-    name = "Room"
-    table_name = "rooms"
     schema = Room
 
 

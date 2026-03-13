@@ -7,8 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 class BaseRepository:
     model = None
-    name = None
-    table_name = None
     schema: BaseModel = None
 
     def __init__(self, session: AsyncSession):
@@ -22,14 +20,6 @@ class BaseRepository:
     async def get_all(self) -> list[BaseModel]:
         return await self.get_all_by_filter()
 
-    async def get_by_id(self, obj_id: int):
-        qwery = select(self.model).filter_by(id=obj_id)
-        result = await self.session.execute(qwery)
-        try:
-            return self.schema.model_validate(result.scalars().one(), from_attributes=True)
-        except NoResultFound:
-            raise HTTPException(status_code=404, detail=f"{self.name} not found")
-
     async def get_one_or_none(self, **filter_by):
         query = select(self.model).filter_by(**filter_by)
         result = await self.session.execute(query)
@@ -39,7 +29,7 @@ class BaseRepository:
                 return None
             return self.schema.model_validate(result, from_attributes=True)
         except MultipleResultsFound:
-            raise HTTPException(status_code=400, detail=f"Multiple {self.table_name} found")
+            raise HTTPException(status_code=400, detail=f"Найдено более одного объекта по заданным параметрам")
 
     async def add(self, data: BaseModel) -> BaseModel:
         insert_data_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
@@ -49,7 +39,7 @@ class BaseRepository:
     async def edit(self, data: BaseModel, for_patch: bool = False, **filter_by) -> None:
         for_edit = await self.get_one_or_none(**filter_by)
         if for_edit is None:
-            raise HTTPException(status_code=404, detail=f"{self.name} not found")
+            raise HTTPException(status_code=404, detail=f"Not found")
         update_stmt = (
             update(self.model)
             .where(self.model.id == for_edit.id)

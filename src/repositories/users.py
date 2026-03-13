@@ -6,10 +6,8 @@ from src.repositories.base import BaseRepository
 from src.schemas.users import User, UserWithHashedPassword
 
 
-class UserRepository(BaseRepository):
+class UsersRepository(BaseRepository):
     model = UsersOrm
-    name = "User"
-    table_name = "users"
     schema = User
 
     async def get_user_with_hashed_password(self, email: EmailStr) -> UserWithHashedPassword | None:

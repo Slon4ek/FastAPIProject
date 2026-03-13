@@ -7,11 +7,9 @@ from src.schemas.hotels import Hotel
 
 class HotelsRepository(BaseRepository):
     model = HotelsOrm
-    name = "Hotel"
-    table_name = "hotels"
     schema = Hotel
 
-    async def get_all(
+    async def get_all_by_filter(
             self,
             title,
             location,

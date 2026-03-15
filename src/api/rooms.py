@@ -3,7 +3,8 @@ from datetime import date, timedelta
 from fastapi import APIRouter, Body, Query
 
 from src.api.dependencies import DBDep
-from src.schemas.rooms import RoomAdd, RoomEdit, RoomAddRequest
+from src.schemas.facilities import RoomFacilitiesAdd
+from src.schemas.rooms import RoomAdd, RoomEdit, RoomAddRequest, RoomForPatch
 
 router = APIRouter(prefix="/hotels", tags=["Номера"])
 
@@ -33,7 +34,12 @@ async def get_room(
         room_id: int,
         db: DBDep
 ):
-    room = await db.rooms.get_one_or_none(hotel_id=hotel_id, id=room_id)
+    room = await db.rooms.get_one_or_none(
+        hotel_id=hotel_id,
+        id=room_id,
+        with_relations=True,
+        relation_name="facilities"
+    )
 
     if room is None:
         return {"message": "Room not found"}
@@ -56,7 +62,8 @@ async def create_room(
                         "title": "Стандартный номер",
                         "description": "Стандартный номер 25 кв. м.",
                         "price": 1000,
-                        "quantity": 100
+                        "quantity": 100,
+                        "facilities_ids": [1, 2, 3]
                     }
                 },
                 "Lux": {
@@ -64,7 +71,8 @@ async def create_room(
                         "title": "Люкс",
                         "description": "Люкс 50 кв. м.",
                         "price": 2000,
-                        "quantity": 50
+                        "quantity": 50,
+                        "facilities_ids": [1, 2, 3]
                     }
                 },
                 "Presidential": {
@@ -72,7 +80,8 @@ async def create_room(
                         "title": "Президентский номер",
                         "description": "Президентский номер 100 кв. м.",
                         "price": 5000,
-                        "quantity": 10
+                        "quantity": 10,
+                        "facilities_ids": [1, 2, 3]
                     }
                 }
             }
@@ -80,6 +89,10 @@ async def create_room(
 ):
     _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     room = await db.rooms.add(_room_data)
+    facilities_for_room = [
+        RoomFacilitiesAdd(room_id=room.id, facility_id=facility_id) for facility_id in room_data.facilities_ids
+    ]
+    await db.room_facilities.add_bulk(facilities_for_room)
     await db.commit()
     return {"message": "Room created", "room": room}
 
@@ -97,6 +110,7 @@ async def update_room(
 ):
     _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     await db.rooms.edit(data=_room_data, hotel_id=hotel_id, id=room_id)
+    await db.room_facilities.set_room_facilities(room_id=room_id, facilities_ids=room_data.facilities_ids)
     await db.commit()
     return {"message": "Room updated", "room": room_data}
 
@@ -127,6 +141,10 @@ async def partially_update_room(
         hotel_id: int,
         room_id: int
 ):
-    await db.rooms.edit(data=room_data, hotel_id=hotel_id, id=room_id, for_patch=True)
+    _room_data_dict = room_data.model_dump(exclude_unset=True)
+    _room_data = RoomForPatch(hotel_id=hotel_id, **_room_data_dict)
+    await db.rooms.edit(data=_room_data, hotel_id=hotel_id, id=room_id, for_patch=True)
+    if "facilities_ids" in _room_data_dict:
+        await db.room_facilities.set_room_facilities(room_id=room_id, facilities_ids=_room_data_dict["facilities_ids"])
     await db.commit()
     return {"message": "Room updated"}

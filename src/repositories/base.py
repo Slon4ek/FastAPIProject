@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 class BaseRepository:
@@ -12,7 +13,7 @@ class BaseRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all_by_filter(self, *filter, **filter_by) -> list[BaseModel]:
+    async def get_all_by_filter(self, *filter, **filter_by):
         query = (
             select(self.model)
             .filter(*filter)
@@ -24,8 +25,12 @@ class BaseRepository:
     async def get_all(self) -> list[BaseModel]:
         return await self.get_all_by_filter()
 
-    async def get_one_or_none(self, **filter_by):
+    async def get_one_or_none(self, with_relations: bool =  False, relation_name:str = None, **filter_by):
         query = select(self.model).filter_by(**filter_by)
+
+        if with_relations:
+            query = query.options(selectinload(getattr(self.model, relation_name)))
+
         result = await self.session.execute(query)
         try:
             result = result.scalars().one_or_none()
@@ -39,6 +44,10 @@ class BaseRepository:
         insert_data_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
         result = await self.session.execute(insert_data_stmt)
         return self.schema.model_validate(result.scalar_one(), from_attributes=True)
+
+    async def add_bulk(self, data: list[BaseModel]) -> None:
+        insert_data_stmt = insert(self.model).values([item.model_dump() for item in data])
+        await self.session.execute(insert_data_stmt)
 
     async def edit(self, data: BaseModel, for_patch: bool = False, **filter_by) -> None:
         for_edit = await self.get_one_or_none(**filter_by)

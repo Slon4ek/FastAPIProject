@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import BaseModel
 from src.models.facilities import FacilitiesOrm
+from src.models.images import ImagesOrm
 
 
 class RoomsOrm(BaseModel):
@@ -19,3 +20,6 @@ class RoomsOrm(BaseModel):
         back_populates="rooms",
         secondary="rooms_facilities"
     )
+
+    images: Mapped[list["ImagesOrm"]] = relationship(back_populates="room")
+    hotel: Mapped["HotelsOrm"] = relationship(back_populates="rooms")

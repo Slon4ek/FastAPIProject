@@ -1,7 +1,10 @@
+import json
+
 from fastapi import APIRouter
+from fastapi_cache.decorator import cache
 
 from src.api.dependencies import DBDep
-from src.schemas.facilities import FacilityAdd
+from src.schemas.facility import FacilityAdd
 
 router = APIRouter(
     prefix="/facilities",
@@ -10,6 +13,7 @@ router = APIRouter(
 
 
 @router.get("", summary="Удобства в номерах", description="Получить список всех удобств")
+@cache(expire=360)
 async def get_facilities(
         db: DBDep
 ):

@@ -5,13 +5,13 @@ from sqlalchemy.orm import selectinload
 
 from src.models.rooms import RoomsOrm
 from src.repositories.base import BaseRepository
+from src.repositories.mappers.mappers import RoomsDataMapper, RoomsWithRelationsDataMapper
 from src.repositories.utils import get_available_rooms
-from src.schemas.rooms import Room, RoomsWithRelations
 
 
 class RoomsRepository(BaseRepository):
     model = RoomsOrm
-    schema = RoomsWithRelations
+    mapper = RoomsDataMapper
 
     async def get_available_for_date(
             self,
@@ -34,7 +34,7 @@ class RoomsRepository(BaseRepository):
             .filter(RoomsOrm.id.in_(room_ids))
         )
         result = await self.session.execute(query)
-        rooms = [self.schema.model_validate(item, from_attributes=True) for item in result.scalars().all()]
+        rooms = [self.mapper().map_to_domain_entity(item) for item in result.scalars().all()]
 
         available_rooms_map = {row[0]: row[1] for row in rows}
         for room in rooms:
@@ -42,3 +42,13 @@ class RoomsRepository(BaseRepository):
                 room.quantity = available_rooms_map[room.id]
 
         return rooms
+
+    async def get_one_or_none(
+            self,
+            with_relations: bool =  False,
+            relations_name: str | list[str] = None,
+            **filter_by
+    ):
+        if with_relations:
+            self.mapper = RoomsWithRelationsDataMapper
+        return await super().get_one_or_none(with_relations, relations_name, **filter_by)

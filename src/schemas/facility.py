@@ -5,7 +5,7 @@ class FacilityAdd(BaseModel):
     title: str
 
 
-class Facilities(FacilityAdd):
+class Facility(FacilityAdd):
     id: int
 
     model_config = ConfigDict(from_attributes=True)

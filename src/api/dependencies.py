@@ -16,6 +16,7 @@ class PaginationParams(BaseModel):
 
 PaginationDep = Annotated[PaginationParams, Depends()]
 
+
 def get_token(request: Request) -> str:
     access_token = request.cookies.get("access_token", None)
 
@@ -24,9 +25,11 @@ def get_token(request: Request) -> str:
 
     return access_token
 
+
 def get_current_user(token: str = Depends(get_token)) -> int:
-    pyload = AuthService().decode_access_token(token)
-    return pyload["user_id"]
+    payload = AuthService().decode_access_token(token)
+    return payload["user_id"]
+
 
 UserIdDep = Annotated[int, Depends(get_current_user)]
 
@@ -34,5 +37,6 @@ UserIdDep = Annotated[int, Depends(get_current_user)]
 async def get_db_manager():
     async with DBManager(session_factory=async_session_maker) as db:
         yield db
+
 
 DBDep = Annotated[DBManager, Depends(get_db_manager)]

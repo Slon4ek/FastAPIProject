@@ -1,14 +1,16 @@
 from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select, insert, update, delete
-from sqlalchemy.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+from src.repositories.mappers.base import DataMapper
 
 
 class BaseRepository:
     model = None
-    schema: BaseModel = None
+    mapper = DataMapper
 
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -20,30 +22,30 @@ class BaseRepository:
             .filter_by(**filter_by)
         )
         result = await self.session.execute(query)
-        return [self.schema.model_validate(item, from_attributes=True) for item in result.scalars().all()]
+        return [self.mapper().map_to_domain_entity(item) for item in result.scalars().all()]
 
     async def get_all(self) -> list[BaseModel]:
         return await self.get_all_by_filter()
 
-    async def get_one_or_none(self, with_relations: bool =  False, relation_name:str = None, **filter_by):
+    async def get_one_or_none(self, with_relations: bool =  False, relations_name: list[str] = None, **filter_by):
         query = select(self.model).filter_by(**filter_by)
 
         if with_relations:
-            query = query.options(selectinload(getattr(self.model, relation_name)))
+            query = query.options(*[selectinload(getattr(self.model, name)) for name in relations_name])
 
         result = await self.session.execute(query)
         try:
             result = result.scalars().one_or_none()
             if result is None:
                 return None
-            return self.schema.model_validate(result, from_attributes=True)
+            return self.mapper().map_to_domain_entity(result)
         except MultipleResultsFound:
             raise HTTPException(status_code=400, detail=f"Найдено более одного объекта по заданным параметрам")
 
     async def add(self, data: BaseModel) -> BaseModel:
         insert_data_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
         result = await self.session.execute(insert_data_stmt)
-        return self.schema.model_validate(result.scalar_one(), from_attributes=True)
+        return self.mapper().map_to_domain_entity(result.scalar_one())
 
     async def add_bulk(self, data: list[BaseModel]) -> None:
         insert_data_stmt = insert(self.model).values([item.model_dump() for item in data])
@@ -63,3 +65,5 @@ class BaseRepository:
     async def delete(self, **filter_by) -> None:
         stmt = delete(self.model).filter_by(**filter_by)
         await self.session.execute(stmt)
+
+

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 from fastapi import HTTPException
+from jwt import ExpiredSignatureError
 from pwdlib import PasswordHash
 
 from src.config import settings
@@ -29,5 +30,7 @@ class AuthService:
     def decode_access_token(self, token: str) -> dict:
         try:
             return jwt.decode(token, self.token_secret_key, algorithms=[self.token_algorithm])
+        except ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token has expired")
         except jwt.exceptions.DecodeError:
             raise HTTPException(status_code=401, detail="Invalid token")

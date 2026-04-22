@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Body, Response
+from fastapi.openapi.models import Example
 from sqlalchemy.exc import IntegrityError
 
 from src.api.dependencies import UserIdDep, DBDep
@@ -43,26 +44,24 @@ async def register_user(
         db: DBDep,
         user: UserRequestAdd = Body(
             openapi_examples={
-                "user1": {
-                    "summary": "User 1",
-                    "value": {
+                "John Doe": Example(
+                    value= {
                         "username": "user1",
                         "email": "user1@example.com",
                         "first_name": "John",
                         "last_name": "Doe",
                         "password": "password123"
                     }
-                },
-                "user2": {
-                    "summary": "Admin",
-                    "value": {
+                ),
+                "Anna Smith": Example(
+                    value= {
                         "username": "admin",
                         "email": "admin@example.com",
-                        "first_name": "John",
+                        "first_name": "Anna",
                         "last_name": "Smith",
                         "password": "qwerty123"
                     }
-                }
+                )
             }
         )
 ):

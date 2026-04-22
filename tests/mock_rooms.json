@@ -1,0 +1,72 @@
+[
+  {
+    "title": "Deluxe Suite",
+    "description": "Spacious suite with city view",
+    "price": 200,
+    "quantity": 3,
+    "hotel_id": 1
+  },
+  {
+    "title": "Executive Room",
+    "description": "Business-friendly room with desk",
+    "price": 150,
+    "quantity": 5,
+    "hotel_id": 1
+  },
+  {
+    "title": "Ocean View",
+    "description": "Beautiful ocean view room",
+    "price": 250,
+    "quantity": 2,
+    "hotel_id": 2
+  },
+  {
+    "title": "Standard Room",
+    "description": "Comfortable standard room",
+    "price": 100,
+    "quantity": 4,
+    "hotel_id": 2
+  },
+  {
+    "title": "Mountain Retreat",
+    "description": "Cozy room with mountain view",
+    "price": 180,
+    "quantity": 3,
+    "hotel_id": 3
+  },
+  {
+    "title": "Classic Room",
+    "description": "Traditional room with comfort",
+    "price": 120,
+    "quantity": 5,
+    "hotel_id": 3
+  },
+  {
+    "title": "Luxury Suite",
+    "description": "Premium suite with balcony",
+    "price": 300,
+    "quantity": 2,
+    "hotel_id": 4
+  },
+  {
+    "title": "Business Room",
+    "description": "Modern room for business travelers",
+    "price": 160,
+    "quantity": 4,
+    "hotel_id": 4
+  },
+  {
+    "title": "Beachfront Villa",
+    "description": "Private villa with direct beach access",
+    "price": 400,
+    "quantity": 3,
+    "hotel_id": 5
+  },
+  {
+    "title": "Garden View",
+    "description": "Peaceful room with garden view",
+    "price": 140,
+    "quantity": 4,
+    "hotel_id": 5
+  }
+]

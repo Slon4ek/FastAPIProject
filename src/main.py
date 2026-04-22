@@ -17,6 +17,7 @@ from src.api.rooms import router as rooms_router
 from src.api.facilities import router as facilities_router
 from src.api.bookings import router as bookings_router
 from src.api.images import router as images_router
+from src.config import settings
 from src.init import redis_manager
 
 
@@ -26,6 +27,9 @@ async def lifespan(app: FastAPI):
     FastAPICache.init(RedisBackend(redis_manager.redis_client), prefix="fastapi-cache")
     yield
     await redis_manager.close()
+
+# if settings.MODE == "TEST":
+#     FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
 
 app = FastAPI(docs_url=None, redoc_url=None, lifespan=lifespan)
 app.include_router(authorization_router)

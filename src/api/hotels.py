@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Query, Body
+from fastapi.openapi.models import Example
 from fastapi_cache.decorator import cache
 
 from src.schemas.hotels import HotelAdd, HotelPatch
@@ -18,15 +19,24 @@ router = APIRouter(prefix="/hotels", tags=["Отели"])
 async def get_hotels(
         db: DBDep,
         pagination: PaginationDep,
-        date_from: date | None = Query(None, description="Фильтр по дате заезда",
-                                       example=date.today()),
-        date_to: date | None = Query(None, description="Фильтр по дате выезда",
-                                     example=date.today() + timedelta(days=7)),
-        stars: int | None = Query(None, description="Фильтр по количеству звезд"),
-        title: str | None = Query(None, description="Фильтр по названию отеля"),
-        location: str | None = Query(None, description="Фильтр по адресу"),
+        date_from: date | None = Query(
+            None,
+            description="Дата заезда",
+            example= date.today()
+        ),
+        date_to: date | None = Query(
+            None,
+            description="Дата выезда",
+            example=date.today() + timedelta(days=7)
+        ),
+        stars: int | None = Query(None, description="Количество звезд"),
+        title: str | None = Query(None, description="Название отеля"),
+        location: str | None = Query(None, description="Адрес отеля"),
 ):
     per_page = pagination.per_page or 5
+
+    if not date_from or not date_to:
+        return await db.hotels.get_all()
 
     return await db.hotels.get_available_for_date(
         stars=stars,
@@ -58,22 +68,20 @@ async def create_hotel(
         db: DBDep,
         hotel_data: HotelAdd = Body(
             openapi_examples={
-                "Hilton Hotel": {
-                    "summary": "Hilton Hotel",
-                    "value": {
+                "Hilton Hotel": Example(
+                    value={
                         "title": "Hilton",
                         "stars": 5,
                         "location": "г. Сочи, ул. Моря, д. 1"
-                    }
-                },
-                "Four Seasons Hotel": {
-                    "summary": "Four Seasons Hotel",
-                    "value": {
+                    },
+                ),
+                "Four Seasons Hotel": Example(
+                    value = {
                         "title": "Four Seasons",
                         "stars": 4,
                         "location": "г. Москва, ул. Ленина, д. 1"
                     }
-                }
+                )
             }
         )
 ):

@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Body, Query
+from fastapi.openapi.models import Example
 from fastapi_cache.decorator import cache
 
 from src.api.dependencies import DBDep
@@ -20,7 +21,7 @@ async def get_hotel_rooms(
         hotel_id: int,
         db: DBDep,
         date_from: date = Query(example=date.today()),
-        date_to: date = Query(example=date.today() + timedelta(days=7))
+        date_to: date = Query(example=date.today() + timedelta(days=7)),
 ):
     rooms = await db.rooms.get_available_for_date(hotel_id=hotel_id, date_from=date_from, date_to=date_to)
     return {"rooms": rooms}
@@ -59,42 +60,43 @@ async def create_room(
         hotel_id: int,
         room_data: RoomAddRequest = Body(
             openapi_examples={
-                "Standart": {
-                    "value": {
+                "Standard": Example(
+                    value= {
                         "title": "Стандартный номер",
                         "description": "Стандартный номер 25 кв. м.",
                         "price": 1000,
                         "quantity": 100,
                         "facilities_ids": [1, 2, 3]
                     }
-                },
-                "Lux": {
-                    "value": {
+                ),
+                "Lux": Example(
+                    value= {
                         "title": "Люкс",
                         "description": "Люкс 50 кв. м.",
                         "price": 2000,
                         "quantity": 50,
                         "facilities_ids": [1, 2, 3]
                     }
-                },
-                "Presidential": {
-                    "value": {
+                ),
+                "Presidential": Example(
+                    value= {
                         "title": "Президентский номер",
                         "description": "Президентский номер 100 кв. м.",
                         "price": 5000,
                         "quantity": 10,
                         "facilities_ids": [1, 2, 3]
                     }
-                }
+                )
             }
         )
 ):
     _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     room = await db.rooms.add(_room_data)
-    facilities_for_room = [
-        RoomFacilitiesAdd(room_id=room.id, facility_id=facility_id) for facility_id in room_data.facilities_ids
-    ]
-    await db.room_facilities.add_bulk(facilities_for_room)
+    if room_data.facilities_ids:
+        facilities_for_room = [
+            RoomFacilitiesAdd(room_id=room.id, facility_id=facility_id) for facility_id in room_data.facilities_ids
+        ]
+        await db.room_facilities.add_bulk(facilities_for_room)
     await db.commit()
     return {"message": "Room created", "room": room}
 

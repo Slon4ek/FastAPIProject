@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Grand Hotel",
+    "stars": 5,
+    "location": "Moscow, Russia"
+  },
+  {
+    "title": "Sunset Resort",
+    "stars": 4,
+    "location": "Miami, USA"
+  },
+  {
+    "title": "Mountain View Inn",
+    "stars": 3,
+    "location": "Swiss Alps, Switzerland"
+  },
+  {
+    "title": "City Central Hotel",
+    "stars": 4,
+    "location": "London, UK"
+  },
+  {
+    "title": "Beach Paradise",
+    "stars": 5,
+    "location": "Bali, Indonesia"
+  }
+]

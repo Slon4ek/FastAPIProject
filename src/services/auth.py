@@ -20,7 +20,7 @@ class AuthService:
         to_encode |= {"exp": expire}
         encoded_jwt = jwt.encode(to_encode, self.token_secret_key, algorithm=self.token_algorithm)
         return encoded_jwt
-    
+
     def get_password_hash(self, password: str) -> str:
         return self.password_hash.hash(password)
 

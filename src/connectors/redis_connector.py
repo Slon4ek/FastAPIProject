@@ -11,9 +11,7 @@ class RedisManager:
     async def connect(self):
         if self.redis_client is None:
             self.redis_client = await redis.Redis(
-                host=self.host,
-                port=self.port,
-                decode_responses=True
+                host=self.host, port=self.port, decode_responses=True
             )
 
     async def set(self, key: str, value: Any, expire: Optional[int] = None):

@@ -16,7 +16,9 @@ class BookingsOrm(BaseModel):
     date_to: Mapped[date]
     price: Mapped[int]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=func.now(), onupdate=func.now()
+    )
 
     @hybrid_property
     def total_price(self):
@@ -24,5 +26,4 @@ class BookingsOrm(BaseModel):
 
     @total_price.expression
     def total_price(cls) -> int:
-        return cls.price * func.date_part('day', cls.date_to - cls.date_from)
-
+        return cls.price * func.date_part("day", cls.date_to - cls.date_from)

@@ -42,13 +42,16 @@ class UsersDataMapper(DataMapper):
     db_model = UsersOrm
     schema = User
 
+
 class FacilitiesDataMapper(DataMapper):
     db_model = FacilitiesOrm
     schema = Facility
 
+
 class RoomFacilitiesDataMapper(DataMapper):
     db_model = RoomsFacilitiesOrm
     schema = RoomFacilities
+
 
 class ImagesDataMapper(DataMapper):
     db_model = ImagesOrm

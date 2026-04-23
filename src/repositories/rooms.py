@@ -13,16 +13,9 @@ class RoomsRepository(BaseRepository):
     model = RoomsOrm
     mapper = RoomsDataMapper
 
-    async def get_available_for_date(
-            self,
-            date_from: date,
-            date_to: date,
-            hotel_id: int
-    ):
+    async def get_available_for_date(self, date_from: date, date_to: date, hotel_id: int):
         available_rooms_query = get_available_rooms(
-            date_from=date_from,
-            date_to=date_to,
-            hotel_id=hotel_id
+            date_from=date_from, date_to=date_to, hotel_id=hotel_id
         )
         result = await self.session.execute(available_rooms_query)
         rows = result.fetchall()
@@ -44,10 +37,7 @@ class RoomsRepository(BaseRepository):
         return rooms
 
     async def get_one_or_none(
-            self,
-            with_relations: bool =  False,
-            relations_name: str | list[str] = None,
-            **filter_by
+        self, with_relations: bool = False, relations_name: str | list[str] = None, **filter_by
     ):
         if with_relations:
             self.mapper = RoomsWithRelationsDataMapper

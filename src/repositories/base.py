@@ -16,22 +16,22 @@ class BaseRepository:
         self.session = session
 
     async def get_all_by_filter(self, *filter, **filter_by):
-        query = (
-            select(self.model)
-            .filter(*filter)
-            .filter_by(**filter_by)
-        )
+        query = select(self.model).filter(*filter).filter_by(**filter_by)
         result = await self.session.execute(query)
         return [self.mapper().map_to_domain_entity(item) for item in result.scalars().all()]
 
     async def get_all(self) -> list[BaseModel]:
         return await self.get_all_by_filter()
 
-    async def get_one_or_none(self, with_relations: bool =  False, relations_name: list[str] = None, **filter_by):
+    async def get_one_or_none(
+        self, with_relations: bool = False, relations_name: list[str] = None, **filter_by
+    ):
         query = select(self.model).filter_by(**filter_by)
 
         if with_relations:
-            query = query.options(*[selectinload(getattr(self.model, name)) for name in relations_name])
+            query = query.options(
+                *[selectinload(getattr(self.model, name)) for name in relations_name]
+            )
 
         result = await self.session.execute(query)
         try:
@@ -40,7 +40,9 @@ class BaseRepository:
                 return None
             return self.mapper().map_to_domain_entity(result)
         except MultipleResultsFound:
-            raise HTTPException(status_code=400, detail="Найдено более одного объекта по заданным параметрам")
+            raise HTTPException(
+                status_code=400, detail="Найдено более одного объекта по заданным параметрам"
+            )
 
     async def add(self, data: BaseModel) -> BaseModel:
         insert_data_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
@@ -65,5 +67,3 @@ class BaseRepository:
     async def delete(self, **filter_by) -> None:
         stmt = delete(self.model).filter_by(**filter_by)
         await self.session.execute(stmt)
-
-

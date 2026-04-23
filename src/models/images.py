@@ -5,9 +5,11 @@ from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import BaseModel
+
 if typing.TYPE_CHECKING:
     from src.models import RoomsOrm
     from src.models import HotelsOrm
+
 
 class ImagesOrm(BaseModel):
     __tablename__ = "images"

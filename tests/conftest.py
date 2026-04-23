@@ -83,7 +83,7 @@ async def register_user(setup_db, ac) -> None:
 async def auth_ac(register_user, ac):
     user_data = UserLogin(
         email="test@test.com",
-        password="test",
+        password="test12345",
     )
     await ac.post(
         "/auth/login",

@@ -15,12 +15,10 @@ async def add_img_to_db(data_list: list[BaseModel]):
         await db.images.add_bulk(data_list)
         await db.commit()
 
+
 @celery_app.task
 def compress_image(
-        img_path: str,
-        output_dir: str = "src/static/images",
-        hotel_id: int = None,
-        room_id: int = None
+    img_path: str, output_dir: str = "src/static/images", hotel_id: int = None, room_id: int = None
 ):
     """
     Сжимает изображение до заданных размеров и сохраняет в указанную директорию.
@@ -55,10 +53,10 @@ def compress_image(
             output_path = os.path.join(output_dir, f"{name}_{size}{ext}")
 
             img_data = ImageAdd(
-                name = os.path.basename(output_path),
+                name=os.path.basename(output_path),
                 image_dir_path=output_dir,
                 hotel_id=hotel_id,
-                room_id=room_id
+                room_id=room_id,
             )
             images.append(img_data)
 
@@ -66,10 +64,12 @@ def compress_image(
 
         asyncio.run(add_img_to_db(images))
 
+
 async def get_booking_with_today_checkin_helper():
     async with DBManager(session_factory=async_session_maker_null_pool) as db:
         bookings = await db.bookings.get_booking_with_today_checkin()
         print(bookings)
+
 
 @celery_app.task(name="send_emails_today_checkin")
 def send_emails_to_users_with_today_checkin():

@@ -3,17 +3,11 @@ from fastapi import APIRouter, UploadFile
 
 from src.tasks.tasks import compress_image
 
-router = APIRouter(
-    prefix="/images",
-    tags=["Работа с изображениями"]
-)
+router = APIRouter(prefix="/images", tags=["Работа с изображениями"])
+
 
 @router.post("")
-async def upload_image(
-        file: UploadFile,
-        hotel_id: int = None,
-        room_id: int = None
-):
+async def upload_image(file: UploadFile, hotel_id: int = None, room_id: int = None):
     img_path = f"src/static/images/{file.filename}"
     imgs_dir = "src/static/images"
 

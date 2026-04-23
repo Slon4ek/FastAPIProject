@@ -40,7 +40,7 @@ class BaseRepository:
                 return None
             return self.mapper().map_to_domain_entity(result)
         except MultipleResultsFound:
-            raise HTTPException(status_code=400, detail=f"Найдено более одного объекта по заданным параметрам")
+            raise HTTPException(status_code=400, detail="Найдено более одного объекта по заданным параметрам")
 
     async def add(self, data: BaseModel) -> BaseModel:
         insert_data_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
@@ -54,7 +54,7 @@ class BaseRepository:
     async def edit(self, data: BaseModel, for_patch: bool = False, **filter_by) -> None:
         for_edit = await self.get_one_or_none(**filter_by)
         if for_edit is None:
-            raise HTTPException(status_code=404, detail=f"Not found")
+            raise HTTPException(status_code=404, detail="Not found")
         update_stmt = (
             update(self.model)
             .where(self.model.id == for_edit.id)

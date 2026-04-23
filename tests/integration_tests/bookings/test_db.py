@@ -1,7 +1,9 @@
-from src.schemas.bookings import *
+from src.schemas.bookings import BookingAdd
 
 
 async def test_bookings_crud(db):
+    from datetime import date
+
     user_id = (await db.users.get_all())[0].id
     room_id = (await db.rooms.get_all())[0].id
 

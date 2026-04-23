@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 import json
 import pytest
 import httpx
@@ -6,9 +7,9 @@ from unittest import mock
 mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f).start()
 
 from src.config import settings
-from src.database import BaseModel, engine_null_pool, async_session_maker_null_pool
+from src.database import BaseModel, engine_null_pool, async_session_maker
 from src.main import app
-from src.models import *
+from src.models import * # noqa
 from src.schemas.hotels import HotelAdd
 from src.schemas.rooms import RoomAdd
 from src.schemas.users import UserRequestAdd, UserLogin
@@ -20,9 +21,9 @@ def check_mode() -> None:
     assert settings.MODE == "TEST"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 async def db():
-    async with DBManager(session_factory=async_session_maker_null_pool) as db:
+    async with DBManager(session_factory=async_session_maker) as db:
         yield db
 
 
@@ -56,7 +57,7 @@ async def setup_db(check_mode) -> None:
         await conn.run_sync(BaseModel.metadata.drop_all)
         await conn.run_sync(BaseModel.metadata.create_all)
 
-    async with DBManager(session_factory=async_session_maker_null_pool) as db_:
+    async with DBManager(session_factory=async_session_maker) as db_:
         await db_.hotels.add_bulk(hotels_schemas)
         await db_.rooms.add_bulk(rooms_schemas)
         await db_.commit()
@@ -67,7 +68,7 @@ async def register_user(setup_db, ac) -> None:
     test_user = UserRequestAdd(
         username="test",
         email="test@test.com",
-        password="test",
+        password="test12345",
         first_name="test",
         last_name="test"
     )

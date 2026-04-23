@@ -77,7 +77,7 @@ async def register_user(
         auth_user = await db.users.add(new_user)
         await db.commit()
     except IntegrityError:
-        raise HTTPException(status_code=400, detail="User with this email already exists")
+        raise HTTPException(status_code=409, detail="User with this email already exists")
 
     return {"message": "User registered successfully", "user": auth_user}
 

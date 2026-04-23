@@ -1,9 +1,11 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
+from typing import Annotated
+
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, StringConstraints
 
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    password: Annotated[str, StringConstraints(min_length=8)]
 
 
 class UserRequestAdd(UserLogin):

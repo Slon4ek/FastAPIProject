@@ -1,11 +1,16 @@
 from datetime import date
 from sqlalchemy import select, func
 
+from exceptions import DateEqualError, DateNotEqualError
 from src.models.bookings import BookingsOrm
 from src.models.rooms import RoomsOrm
 
 
 def get_available_rooms(date_from: date, date_to: date, hotel_id: int | None = None):
+    if date_from > date_to:
+        raise DateNotEqualError
+    if date_from == date_to:
+        raise DateEqualError
     booked_rooms_count = (
         select(BookingsOrm.room_id, func.count("*").label("rooms_booked"))
         .select_from(BookingsOrm)

@@ -23,7 +23,3 @@ class BookingsOrm(BaseModel):
     @hybrid_property
     def total_price(self):
         return self.price * (self.date_to - self.date_from).days
-
-    @total_price.expression
-    def total_price(cls) -> int:
-        return cls.price * func.date_part("day", cls.date_to - cls.date_from)

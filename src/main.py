@@ -23,7 +23,7 @@ from src.init import redis_manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await redis_manager.connect()
-    FastAPICache.init(RedisBackend(redis_manager.redis_client), prefix="fastapi-cache")
+    FastAPICache.init(RedisBackend(redis_manager.redis_client), prefix="fastapi-cache")  # type: ignore
     yield
     await redis_manager.close()
 
@@ -45,7 +45,7 @@ app.mount("/static", StaticFiles(directory="src/static"), name="static")
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
     return get_swagger_ui_html(
-        openapi_url=app.openapi_url,
+        openapi_url=app.openapi_url,  # type: ignore
         title=app.title + " - Swagger UI",
         oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
         swagger_js_url="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js",
@@ -53,7 +53,7 @@ async def custom_swagger_ui_html():
     )
 
 
-@app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+@app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)  # type: ignore
 async def swagger_ui_redirect():
     return get_swagger_ui_oauth2_redirect_html()
 
@@ -61,7 +61,7 @@ async def swagger_ui_redirect():
 @app.get("/redoc", include_in_schema=False)
 async def redoc_html():
     return get_redoc_html(
-        openapi_url=app.openapi_url,
+        openapi_url=app.openapi_url,  # type: ignore
         title=app.title + " - ReDoc",
         redoc_js_url="https://unpkg.com/redoc@2/bundles/redoc.standalone.js",
     )

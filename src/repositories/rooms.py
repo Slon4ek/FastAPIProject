@@ -1,5 +1,4 @@
 from datetime import date
-
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -36,9 +35,12 @@ class RoomsRepository(BaseRepository):
 
         return rooms
 
-    async def get_one_or_none(
-        self, with_relations: bool = False, relations_name: str | list[str] = None, **filter_by
+    async def get_one(
+        self,
+        with_relations: bool = False,
+        relations_name: list[str] | None = None,
+        **filter_by,
     ):
         if with_relations:
             self.mapper = RoomsWithRelationsDataMapper
-        return await super().get_one_or_none(with_relations, relations_name, **filter_by)
+        return await super().get_one(with_relations, relations_name, **filter_by)

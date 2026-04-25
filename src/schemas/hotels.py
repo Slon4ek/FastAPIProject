@@ -22,6 +22,6 @@ class HotelWithRelations(Hotel):
 
 
 class HotelPatch(BaseModel):
-    title: str = Field(None, description="Название отеля")
-    stars: int = Field(None, description="Количество звезд")
-    location: str = Field(None, description="Адрес отеля")
+    title: str | None = Field(None, description="Название отеля")
+    stars: int | None = Field(None, description="Количество звезд")
+    location: str | None = Field(None, description="Адрес отеля")

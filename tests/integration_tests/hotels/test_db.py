@@ -1,6 +1,7 @@
 from src.schemas.hotels import HotelAdd
 from src.utils.db_manager import DBManager
 
+
 async def test_hotel_add(db: DBManager):
     hotel_data = HotelAdd(
         title="Test Hotel",

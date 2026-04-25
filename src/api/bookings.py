@@ -1,5 +1,9 @@
-from fastapi import APIRouter
+from fastapi.exceptions import HTTPException
 
+from fastapi import APIRouter
+from starlette import status
+
+from exceptions import NotFoundError, NotAvailableError
 from src.api.dependencies import DBDep, UserIdDep
 from src.schemas.bookings import BookingAddRequest, BookingAdd
 
@@ -26,13 +30,18 @@ async def get_my_bookings(user_id: UserIdDep, db: DBDep):
     description="Бронирование номера в отеле на определенные даты",
 )
 async def create_booking(user_id: UserIdDep, db: DBDep, booking_data: BookingAddRequest):
-    room = await db.rooms.get_one_or_none(id=booking_data.room_id)
-
-    if room is None:
-        return {"message": "Номер не найден"}
+    try:
+        room = await db.rooms.get_one(id=booking_data.room_id)
+    except NotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Номер не найден")
 
     _booking_data = BookingAdd(user_id=user_id, price=room.price, **booking_data.model_dump())
-    booking = await db.bookings.add_booking(data=_booking_data, hotel_id=room.hotel_id)
+    try:
+        booking = await db.bookings.add_booking(data=_booking_data, hotel_id=room.hotel_id)
+    except NotAvailableError:
+        raise HTTPException(
+            status_code=409, detail="Не осталось свободных номеров на указанные даты"
+        )
     await db.commit()
 
     return {"message": "Бронирование успешно создано", "booking": booking}

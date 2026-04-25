@@ -7,7 +7,7 @@ router = APIRouter(prefix="/images", tags=["Работа с изображени
 
 
 @router.post("")
-async def upload_image(file: UploadFile, hotel_id: int = None, room_id: int = None):
+async def upload_image(file: UploadFile, hotel_id: int | None = None, room_id: int | None = None):
     img_path = f"src/static/images/{file.filename}"
     imgs_dir = "src/static/images"
 

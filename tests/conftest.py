@@ -1,15 +1,19 @@
 # ruff: noqa: E402
 import json
+from typing import AsyncGenerator
+
 import pytest
 import httpx
 from unittest import mock
+
+from httpx import AsyncClient
 
 mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f).start()
 
 from src.config import settings
 from src.database import BaseModel, engine_null_pool, async_session_maker
 from src.main import app
-from src.models import * # noqa
+from src.models import *  # noqa
 from src.schemas.hotels import HotelAdd
 from src.schemas.rooms import RoomAdd
 from src.schemas.users import UserRequestAdd, UserLogin
@@ -35,9 +39,9 @@ async def db():
 
 
 @pytest.fixture(scope="session")
-async def ac():
+async def ac() -> AsyncGenerator[AsyncClient]:
     async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as ac:
         yield ac
 
@@ -48,7 +52,6 @@ async def setup_db(check_mode) -> None:
         mock_hotels = json.load(f)
     with open("tests/mock_rooms.json", "r") as f:
         mock_rooms = json.load(f)
-
 
     hotels_schemas = [HotelAdd.model_validate(hotel) for hotel in mock_hotels]
     rooms_schemas = [RoomAdd.model_validate(room) for room in mock_rooms]
@@ -70,12 +73,9 @@ async def register_user(setup_db, ac) -> None:
         email="test@test.com",
         password="test12345",
         first_name="test",
-        last_name="test"
+        last_name="test",
     )
-    response = await ac.post(
-        "/auth/register",
-        json=test_user.model_dump()
-    )
+    response = await ac.post("/auth/register", json=test_user.model_dump())
     assert response.status_code == 200
 
 

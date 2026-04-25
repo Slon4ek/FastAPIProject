@@ -1,9 +1,10 @@
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Body, Query
+from fastapi import APIRouter, Body, Query, HTTPException
 from fastapi.openapi.models import Example
 from fastapi_cache.decorator import cache
 
+from exceptions import DateEqualError, DateNotEqualError, NotFoundError
 from src.api.dependencies import DBDep
 from src.schemas.facility import RoomFacilitiesAdd
 from src.schemas.rooms import RoomAdd, RoomEdit, RoomAddRequest, RoomForPatch
@@ -23,9 +24,14 @@ async def get_hotel_rooms(
     date_from: date = Query(example=date.today()),
     date_to: date = Query(example=date.today() + timedelta(days=7)),
 ):
-    rooms = await db.rooms.get_available_for_date(
-        hotel_id=hotel_id, date_from=date_from, date_to=date_to
-    )
+    try:
+        rooms = await db.rooms.get_available_for_date(
+            hotel_id=hotel_id, date_from=date_from, date_to=date_to
+        )
+    except DateEqualError:
+        raise HTTPException(status_code=400, detail="Дата заезда не может быть равна дате выезда")
+    except DateNotEqualError:
+        raise HTTPException(status_code=400, detail="Дата выезда не может быть ранее даты заезда")
     return {"rooms": rooms}
 
 
@@ -35,12 +41,15 @@ async def get_hotel_rooms(
     description="Получение номера отеля по его id",
 )
 async def get_room(hotel_id: int, room_id: int, db: DBDep):
-    room = await db.rooms.get_one_or_none(
-        hotel_id=hotel_id, id=room_id, with_relations=True, relations_name=["facilities", "images"]
-    )
-
-    if room is None:
-        return {"message": "Room not found"}
+    try:
+        room = await db.rooms.get_one(
+            hotel_id=hotel_id,
+            id=room_id,
+            with_relations=True,
+            relations_name=["facilities", "images"],
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Номер не найден")
 
     return {"room": room}
 
@@ -83,7 +92,12 @@ async def create_room(
         }
     ),
 ):
-    _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
+    try:
+        hotel = await db.hotels.get_one(id=hotel_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Отель не найден")
+
+    _room_data = RoomAdd(hotel_id=hotel.id, **room_data.model_dump())
     room = await db.rooms.add(_room_data)
     if room_data.facilities_ids:
         facilities_for_room = [

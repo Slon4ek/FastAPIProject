@@ -1,9 +1,10 @@
 from datetime import date, timedelta
-
 from fastapi import APIRouter, Query, Body
+from fastapi.exceptions import HTTPException
 from fastapi.openapi.models import Example
 from fastapi_cache.decorator import cache
 
+from exceptions import DateEqualError, DateNotEqualError, NotFoundError
 from src.schemas.hotels import HotelAdd, HotelPatch
 from src.api.dependencies import PaginationDep, DBDep
 
@@ -31,23 +32,28 @@ async def get_hotels(
 
     if not date_from or not date_to:
         return await db.hotels.get_all()
-
-    return await db.hotels.get_available_for_date(
-        stars=stars,
-        title=title,
-        location=location,
-        limit=per_page,
-        offset=per_page * (pagination.page - 1),
-        date_from=date_from,
-        date_to=date_to,
-    )
+    try:
+        return await db.hotels.get_available_for_date(
+            stars=stars,
+            title=title,
+            location=location,
+            limit=per_page,
+            offset=per_page * (pagination.page - 1),
+            date_from=date_from,
+            date_to=date_to,
+        )
+    except DateEqualError:
+        raise HTTPException(status_code=400, detail="Дата заезда не может быть равна дате выезда")
+    except DateNotEqualError:
+        raise HTTPException(status_code=400, detail="Дата выезда не может быть ранее даты заезда")
 
 
 @router.get("/{hotel_id}", summary="Получить отель по id")
 async def get_hotel(hotel_id: int, db: DBDep):
-    hotel = await db.hotels.get_one_or_none(id=hotel_id)
-    if hotel is None:
-        return {"message": "Отель не найден"}
+    try:
+        hotel = await db.hotels.get_one(id=hotel_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Отель не найден")
     return hotel
 
 

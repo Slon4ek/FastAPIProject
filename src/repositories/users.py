@@ -1,4 +1,4 @@
-from pydantic.v1 import EmailStr
+from pydantic import EmailStr
 from sqlalchemy import select
 
 from src.models.users import UsersOrm

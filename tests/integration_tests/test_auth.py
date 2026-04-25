@@ -8,4 +8,3 @@ def test_encode_and_decode_access_token():
 
     assert pyload is not None
     assert pyload["user_id"] == data["user_id"]
-

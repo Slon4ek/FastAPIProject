@@ -18,7 +18,10 @@ async def add_img_to_db(data_list: list[BaseModel]):
 
 @celery_app.task
 def compress_image(
-    img_path: str, output_dir: str = "src/static/images", hotel_id: int = None, room_id: int = None
+    img_path: str,
+    output_dir: str = "src/static/images",
+    hotel_id: int | None = None,
+    room_id: int | None = None,
 ):
     """
     Сжимает изображение до заданных размеров и сохраняет в указанную директорию.

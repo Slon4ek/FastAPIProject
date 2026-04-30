@@ -6,9 +6,10 @@ from jwt import ExpiredSignatureError
 from pwdlib import PasswordHash
 
 from src.config import settings
+from src.services.base import BaseService
 
 
-class AuthService:
+class AuthService(BaseService):
     password_hash = PasswordHash.recommended()
     token_expiration = timedelta(minutes=30)
     token_algorithm = settings.JWT_ALGORITHM

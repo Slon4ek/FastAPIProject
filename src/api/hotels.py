@@ -4,7 +4,12 @@ from fastapi.exceptions import HTTPException
 from fastapi.openapi.models import Example
 from fastapi_cache.decorator import cache
 
-from exceptions import DateEqualError, DateNotEqualError, NotFoundError
+from src.exceptions import (
+    DateEqualError,
+    DateNotEqualError,
+    NotFoundError,
+    HotelNotFoundHTTPException,
+)
 from src.schemas.hotels import HotelAdd, HotelPatch
 from src.api.dependencies import PaginationDep, DBDep
 
@@ -53,7 +58,7 @@ async def get_hotel(hotel_id: int, db: DBDep):
     try:
         hotel = await db.hotels.get_one(id=hotel_id)
     except NotFoundError:
-        raise HTTPException(status_code=404, detail="Отель не найден")
+        raise HotelNotFoundHTTPException
     return hotel
 
 

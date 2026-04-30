@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
+    CORS_ORIGINS: str = "http://localhost:3000,http://frontend:80"
 
     model_config = SettingsConfigDict(
         # pathlib позволяет формировать путь

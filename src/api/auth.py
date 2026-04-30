@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Body, Response
 from fastapi.openapi.models import Example
 
-from exceptions import InsertionError
+from src.exceptions import IsAlreadyExistsError
 from src.api.dependencies import UserIdDep, DBDep
 from src.schemas.users import UserRequestAdd, UserAdd, UserLogin
 from src.services.auth import AuthService
@@ -67,7 +67,7 @@ async def register_user(
     try:
         auth_user = await db.users.add(new_user)
         await db.commit()
-    except InsertionError:
+    except IsAlreadyExistsError:
         raise HTTPException(status_code=409, detail="User with this email already exists")
 
     return {"message": "User registered successfully", "user": auth_user}

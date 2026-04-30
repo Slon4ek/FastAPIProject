@@ -3,7 +3,7 @@ from fastapi.exceptions import HTTPException
 from fastapi import APIRouter
 from starlette import status
 
-from exceptions import NotFoundError, NotAvailableError
+from src.exceptions import NotFoundError, NotAvailableError
 from src.api.dependencies import DBDep, UserIdDep
 from src.schemas.bookings import BookingAddRequest, BookingAdd
 

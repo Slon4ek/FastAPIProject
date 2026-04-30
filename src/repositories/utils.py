@@ -1,7 +1,7 @@
 from datetime import date
 from sqlalchemy import select, func
 
-from exceptions import DateEqualError, DateNotEqualError
+from src.exceptions import DateEqualError, DateNotEqualError
 from src.models.bookings import BookingsOrm
 from src.models.rooms import RoomsOrm
 

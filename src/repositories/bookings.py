@@ -1,7 +1,7 @@
 from datetime import date
 from sqlalchemy import select
 
-from exceptions import NotAvailableError
+from src.exceptions import NotAvailableError
 from src.models.bookings import BookingsOrm
 from src.repositories.base import BaseRepository
 from src.repositories.mappers.mappers import BookingsDataMapper

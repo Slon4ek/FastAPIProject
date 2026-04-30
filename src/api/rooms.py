@@ -4,7 +4,12 @@ from fastapi import APIRouter, Body, Query, HTTPException
 from fastapi.openapi.models import Example
 from fastapi_cache.decorator import cache
 
-from exceptions import DateEqualError, DateNotEqualError, NotFoundError
+from src.exceptions import (
+    DateEqualError,
+    DateNotEqualError,
+    NotFoundError,
+    RoomNotFoundHTTPException,
+)
 from src.api.dependencies import DBDep
 from src.schemas.facility import RoomFacilitiesAdd
 from src.schemas.rooms import RoomAdd, RoomEdit, RoomAddRequest, RoomForPatch
@@ -49,7 +54,7 @@ async def get_room(hotel_id: int, room_id: int, db: DBDep):
             relations_name=["facilities", "images"],
         )
     except NotFoundError:
-        raise HTTPException(status_code=404, detail="Номер не найден")
+        raise RoomNotFoundHTTPException
 
     return {"room": room}
 

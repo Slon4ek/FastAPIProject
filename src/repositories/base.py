@@ -86,7 +86,6 @@ class BaseRepository(Generic[DBModelType, SchemaType, MapperType]):
     async def edit(
         self, data: SchemaType, exclude_unset: bool = False, **filter_by: Any
     ) -> Result[Any]:
-        await self.get_one(**filter_by)
         update_stmt = (
             update(self.model)
             .filter_by(**filter_by)
@@ -95,7 +94,5 @@ class BaseRepository(Generic[DBModelType, SchemaType, MapperType]):
         return await self.session.execute(update_stmt)
 
     async def delete(self, **filter_by: Any) -> Result[Any]:
-        if filter_by:
-            await self.get_one(**filter_by)
         stmt = delete(self.model).filter_by(**filter_by)
         return await self.session.execute(stmt)

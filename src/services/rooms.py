@@ -57,16 +57,12 @@ class RoomsService(BaseService):
             await self.db.room_facilities.set_room_facilities(
                 room_id=room_id, facilities_ids=room_data.facilities_ids
             )
-        if result.rowcount:
-            await self.db.commit()
-        else:
-            await self.db.rollback()
+        if not result.rowcount:
             raise NotFoundError
+        await self.db.commit()
 
     async def delete_room(self, hotel_id: int, room_id: int) -> None:
         result = await self.db.rooms.delete(hotel_id=hotel_id, id=room_id)
-        if result.rowcount:
-            await self.db.commit()
-        else:
-            await self.db.rollback()
+        if not result.rowcount:
             raise NotFoundError
+        await self.db.commit()

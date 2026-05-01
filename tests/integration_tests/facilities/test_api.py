@@ -1,3 +1,5 @@
+import pytest
+
 from src.schemas.facility import FacilityAdd
 
 
@@ -15,3 +17,11 @@ async def test_get_facilities(ac):
     request = await ac.get("/facilities")
     assert request.status_code == 200
     assert isinstance(request.json(), list)
+
+@pytest.mark.parametrize("facility_id, status_code", [
+    (5, 200),
+    (122, 404),
+])
+async def test_delete_facilities(ac, facility_id, status_code):
+    request = await ac.delete(f"/facilities/{facility_id}")
+    assert request.status_code == status_code

@@ -1,6 +1,7 @@
 from datetime import date
 
 from src.api.dependencies import PaginationDep
+from src.exceptions import NotFoundError
 from src.schemas.hotels import Hotel, HotelAdd, HotelPatch
 from src.services.base import BaseService
 from src.utils.db_manager import DBManager
@@ -44,9 +45,13 @@ class HotelsService(BaseService):
     async def edit_hotel(
         self, data: HotelAdd | HotelPatch, hotel_id: int, for_patch: bool = False
     ) -> None:
-        await self.db.hotels.edit(data=data, id=hotel_id, exclude_unset=for_patch)
+        result = await self.db.hotels.edit(data=data, id=hotel_id, exclude_unset=for_patch)
+        if not result.rowcount:
+            raise NotFoundError
         await self.db.commit()
 
     async def delete_hotel(self, hotel_id: int) -> None:
-        await self.db.hotels.delete(id=hotel_id)
+        result = await self.db.hotels.delete(id=hotel_id)
+        if not result.rowcount:
+            raise NotFoundError
         await self.db.commit()

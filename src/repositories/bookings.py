@@ -18,7 +18,7 @@ class BookingRepository(BaseRepository):
         result = await self.session.execute(qwery)
         return [self.mapper().map_to_domain_entity(booking) for booking in result.scalars().all()]
 
-    async def add_booking(self, data: BookingAdd, hotel_id: int) -> Booking:
+    async def add_booking(self, data: BookingAdd, hotel_id: int) -> Booking | None:
         qwery = get_available_rooms(
             date_from=data.date_from, date_to=data.date_to, hotel_id=hotel_id
         )
@@ -26,5 +26,4 @@ class BookingRepository(BaseRepository):
 
         if data.room_id not in rooms_ids_available_for_book:
             raise NotAvailableError
-
         return await self.add(data)

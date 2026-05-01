@@ -2,7 +2,7 @@ from typing import Sequence, TypeVar, Any, Generic
 
 from pydantic import BaseModel
 from psycopg.errors import UniqueViolation
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update, delete, Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import NoResultFound, IntegrityError
@@ -83,17 +83,19 @@ class BaseRepository(Generic[DBModelType, SchemaType, MapperType]):
         insert_data_stmt = insert(self.model).values([item.model_dump() for item in data])
         await self.session.execute(insert_data_stmt)
 
-    async def edit(self, data: SchemaType, exclude_unset: bool = False, **filter_by: Any) -> None:
+    async def edit(
+        self, data: SchemaType, exclude_unset: bool = False, **filter_by: Any
+    ) -> Result[Any]:
         await self.get_one(**filter_by)
         update_stmt = (
             update(self.model)
             .filter_by(**filter_by)
             .values(**data.model_dump(exclude_unset=exclude_unset))
         )
-        await self.session.execute(update_stmt)
+        return await self.session.execute(update_stmt)
 
-    async def delete(self, **filter_by: Any) -> None:
+    async def delete(self, **filter_by: Any) -> Result[Any]:
         if filter_by:
             await self.get_one(**filter_by)
         stmt = delete(self.model).filter_by(**filter_by)
-        await self.session.execute(stmt)
+        return await self.session.execute(stmt)

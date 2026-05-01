@@ -14,7 +14,6 @@ import pytest
     ],
 )
 async def test_booking(db, auth_ac, room_id, date_from, date_to, status_code):
-    # room = (await db.rooms.get_all())[0]
     response = await auth_ac.post(
         "/bookings",
         json={

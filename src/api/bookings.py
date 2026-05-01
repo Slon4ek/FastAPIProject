@@ -1,18 +1,18 @@
 from fastapi.exceptions import HTTPException
 
 from fastapi import APIRouter
-from starlette import status
 
-from src.exceptions import NotFoundError, NotAvailableError
+from src.exceptions import NotFoundError, NotAvailableError, RoomNotFoundHTTPException
 from src.api.dependencies import DBDep, UserIdDep
-from src.schemas.bookings import BookingAddRequest, BookingAdd
+from src.schemas.bookings import BookingAddRequest
+from src.services.bookings import BookingService
 
 router = APIRouter(prefix="/bookings", tags=["Бронирование номеров"])
 
 
 @router.get("", summary="Все бронирования", description="Получение бронирований всех пользователей")
 async def get_all_bookings(db: DBDep):
-    return await db.bookings.get_all()
+    return await BookingService(db).get_all_bookings()
 
 
 @router.get(
@@ -21,7 +21,7 @@ async def get_all_bookings(db: DBDep):
     description="Получение бронирований текущего пользователя",
 )
 async def get_my_bookings(user_id: UserIdDep, db: DBDep):
-    return await db.bookings.get_all_by_filter(user_id=user_id)
+    return await BookingService(db).get_user_bookings(user_id=user_id)
 
 
 @router.post(
@@ -31,17 +31,11 @@ async def get_my_bookings(user_id: UserIdDep, db: DBDep):
 )
 async def create_booking(user_id: UserIdDep, db: DBDep, booking_data: BookingAddRequest):
     try:
-        room = await db.rooms.get_one(id=booking_data.room_id)
+        booking = await BookingService(db).create_booking(data=booking_data, user_id=user_id)
     except NotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Номер не найден")
-
-    _booking_data = BookingAdd(user_id=user_id, price=room.price, **booking_data.model_dump())
-    try:
-        booking = await db.bookings.add_booking(data=_booking_data, hotel_id=room.hotel_id)
+        raise RoomNotFoundHTTPException
     except NotAvailableError:
         raise HTTPException(
             status_code=409, detail="Не осталось свободных номеров на указанные даты"
         )
-    await db.commit()
-
     return {"message": "Бронирование успешно создано", "booking": booking}

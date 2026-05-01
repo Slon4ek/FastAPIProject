@@ -8,6 +8,8 @@ from unittest import mock
 
 from httpx import AsyncClient
 
+from src.schemas.facility import FacilityAdd
+
 mock.patch("fastapi_cache.decorator.cache", lambda *args, **kwargs: lambda f: f).start()
 
 from src.config import settings
@@ -52,9 +54,12 @@ async def setup_db(check_mode) -> None:
         mock_hotels = json.load(f)
     with open("tests/mock_rooms.json", "r") as f:
         mock_rooms = json.load(f)
+    with open("tests/mock_facilities.json", "r") as f:
+        mock_facilities = json.load(f)
 
     hotels_schemas = [HotelAdd.model_validate(hotel) for hotel in mock_hotels]
     rooms_schemas = [RoomAdd.model_validate(room) for room in mock_rooms]
+    facilities_schemas = [FacilityAdd.model_validate(facility) for facility in mock_facilities]
 
     async with engine_null_pool.begin() as conn:
         await conn.run_sync(BaseModel.metadata.drop_all)
@@ -63,6 +68,7 @@ async def setup_db(check_mode) -> None:
     async with DBManager(session_factory=async_session_maker) as db_:
         await db_.hotels.add_bulk(hotels_schemas)
         await db_.rooms.add_bulk(rooms_schemas)
+        await db_.facilities.add_bulk(facilities_schemas)
         await db_.commit()
 
 

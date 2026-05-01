@@ -17,11 +17,11 @@ class HotelsService(BaseService):
     async def get_hotels(
         self,
         pagination: PaginationDep,
-        date_from: date | None,
-        date_to: date | None,
-        stars: int | None,
-        title: str | None,
-        location: str | None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        stars: int | None = None,
+        title: str | None = None,
+        location: str | None = None,
     ) -> list[Hotel]:
         per_page = pagination.per_page or 5
 

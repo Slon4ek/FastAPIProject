@@ -1,5 +1,10 @@
 import logging
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).parent.parent))
+
 import psycopg
 
 import uvicorn
@@ -40,6 +45,7 @@ async def lifespan(app: FastAPI):
             port=settings.DB_PORT,
             user=settings.DB_USER,
             password=settings.DB_PASSWORD,
+            dbname=settings.DB_NAME,
         )
         cursor = conn.cursor()
         cursor.execute("SELECT version();")
@@ -107,4 +113,4 @@ async def redoc_html():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", reload=True)

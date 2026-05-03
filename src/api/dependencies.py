@@ -3,6 +3,7 @@ from typing import Annotated
 from pydantic import BaseModel
 
 from src.database import async_session_maker
+from src.exceptions import JWTExpiredError, JWTDecodeError
 from src.services.auth import AuthService
 from src.utils.db_manager import DBManager
 
@@ -27,8 +28,13 @@ def get_token(request: Request) -> str:
 
 
 def get_current_user(token: str = Depends(get_token)) -> int:
-    payload = AuthService().decode_access_token(token)
-    return payload["user_id"]
+    try:
+        payload = AuthService().decode_access_token(token)
+        return payload["user_id"]
+    except JWTExpiredError:
+        raise HTTPException(status_code=401, detail="Истекло время действия токена")
+    except JWTDecodeError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 UserIdDep = Annotated[int, Depends(get_current_user)]

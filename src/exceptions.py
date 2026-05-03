@@ -4,26 +4,30 @@ from fastapi import HTTPException
 
 
 class ProjectException(Exception):
-    detail: str = "Unknown error"
+    detail: str | list[Any] = "Неожиданная ошибка"
 
-    def __init__(self, *args: Any) -> None:
+    def __init__(self, detail: str, *args):
+        self.detail = detail
         super().__init__(self.detail, *args)
+
+class AuthenticationError(ProjectException):
+    pass
 
 
 class NotFoundError(ProjectException):
-    detail: str = "Not found"
+    pass
 
 
 class NotAvailableError(ProjectException):
-    detail: str = "Not available"
+    pass
 
 
-class InsertionError(ProjectException):
-    detail: str = "Insertion error"
+class IsAlreadyExistsError(ProjectException):
+    pass
 
 
-class IsAlreadyExistsError(InsertionError):
-    detail: str = "Already exists"
+class UserAlreadyExistsException(IsAlreadyExistsError):
+    pass
 
 
 class DateEqualError(ProjectException):
@@ -50,3 +54,21 @@ class HotelNotFoundHTTPException(ProjectHTTPException):
 class RoomNotFoundHTTPException(ProjectHTTPException):
     status_code = 404
     detail = "Room not found"
+
+
+class JWTExpiredError(ProjectException):
+    detail = "JWT expire error"
+
+
+class JWTDecodeError(ProjectException):
+    detail = "JWT decode error"
+
+
+class EmailAlreadyExistsHTTPException(ProjectHTTPException):
+    status_code = 409
+    detail = "Email already exists"
+
+
+class UsernameAlreadyExistsHTTPException(ProjectHTTPException):
+    status_code = 409
+    detail = "Username already exists"

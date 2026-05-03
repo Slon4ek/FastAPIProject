@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, Body, Response
 from fastapi.openapi.models import Example
 
-from src.exceptions import IsAlreadyExistsError
+from src.exceptions import AuthenticationError, UserAlreadyExistsException, \
+    EmailAlreadyExistsHTTPException, UsernameAlreadyExistsHTTPException
 from src.api.dependencies import UserIdDep, DBDep
-from src.schemas.users import UserRequestAdd, UserAdd, UserLogin
+from src.schemas.users import UserRequestAdd, UserLogin
 from src.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Авторизация и аутентификация"])
@@ -16,12 +17,11 @@ router = APIRouter(prefix="/auth", tags=["Авторизация и аутент
     "генерирует токен доступа и устанавливает его в куки",
 )
 async def login_user(db: DBDep, data: UserLogin, response: Response):
-    user = await db.users.get_user_with_hashed_password(data.email)
-
-    if not user or not AuthService().verify_password(data.password, user.hashed_password):
+    try:
+        access_token = await AuthService(db).login(data)
+    except AuthenticationError:
         raise HTTPException(status_code=401, detail="Неверный логин или пароль")
 
-    access_token = AuthService().create_access_token({"user_id": user.id})
     response.set_cookie(key="access_token", value=access_token)
     return {"access_token": access_token}
 
@@ -56,19 +56,15 @@ async def register_user(
         }
     ),
 ):
-    hashed_password = AuthService().get_password_hash(password=user.password)
-    new_user = UserAdd(
-        username=user.username,
-        email=user.email,
-        first_name=user.first_name,
-        last_name=user.last_name,
-        hashed_password=hashed_password,
-    )
     try:
-        auth_user = await db.users.add(new_user)
-        await db.commit()
-    except IsAlreadyExistsError:
-        raise HTTPException(status_code=409, detail="User with this email already exists")
+        auth_user = await AuthService(db).create_user(user)
+    except UserAlreadyExistsException as e:
+        if "email" in e.detail:
+            raise EmailAlreadyExistsHTTPException from e
+        elif "username" in e.detail:
+            raise UsernameAlreadyExistsHTTPException from e
+        else:
+            raise e
 
     return {"message": "User registered successfully", "user": auth_user}
 
@@ -79,8 +75,7 @@ async def register_user(
     description="Получение информации о текущем пользователе по токену доступа",
 )
 async def get_me(db: DBDep, user_id: UserIdDep):
-    user = await db.users.get_one_or_none(id=user_id)
-    return {"user": user}
+    return await AuthService(db).get_user_info(user_id)
 
 
 @router.post("/logout", summary="Выйти из системы", description="Удаление токена доступа из куки")

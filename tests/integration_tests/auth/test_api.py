@@ -42,7 +42,7 @@ async def test_auth_flow(ac, email, password, username, first_name, last_name, s
     # /me
     me_request = await ac.get("auth/me")
     assert me_request.status_code == 200
-    user_info = me_request.json()["user"]
+    user_info = me_request.json()
     assert user_info["id"] == user["id"]
     assert user_info["username"] == username
     assert user_info["email"] == email

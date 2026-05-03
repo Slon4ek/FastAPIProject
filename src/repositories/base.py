@@ -1,3 +1,4 @@
+import re
 from typing import Sequence, TypeVar, Any, Generic
 
 from pydantic import BaseModel
@@ -75,7 +76,8 @@ class BaseRepository(Generic[DBModelType, SchemaType, MapperType]):
             return self.mapper().map_to_domain_entity(result.scalar_one())
         except IntegrityError as exc:
             if isinstance(exc.orig, UniqueViolation):
-                raise IsAlreadyExistsError from exc
+                detail = re.findall(r"\((.*?)\)", exc.args[0].split("DETAIL: ")[-1])
+                raise IsAlreadyExistsError(detail) from exc
             else:
                 raise exc
 

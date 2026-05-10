@@ -1,10 +1,6 @@
-from pathlib import Path
 from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-# определяем абсолютный путь до корня проекта
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
@@ -17,6 +13,7 @@ class Settings(BaseSettings):
 
     REDIS_HOST: str
     REDIS_PORT: int
+    REDIS_PASSWORD: str
 
     @property
     def REDIS_URL(self) -> str:
@@ -30,11 +27,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str
     CORS_ORIGINS: str = "http://localhost:3000,http://frontend:80"
 
-    model_config = SettingsConfigDict(
-        # pathlib позволяет формировать путь
-        # с помощью оператора "/", аналогично os.path.join()
-        env_file=BASE_DIR / ".env",
-    )
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 settings = Settings()  # type: ignore

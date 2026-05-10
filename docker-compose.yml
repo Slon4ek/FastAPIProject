@@ -1,35 +1,139 @@
 services:
-  booking_back_service:
-    container_name: booking_back
+  postgres:
+    image: postgres:16-alpine
+    container_name: booking_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-booking_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "6432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - booking_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: booking_cache
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass}
+    ports:
+      - "7379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - booking_network
+
+  backend:
+    container_name: booking_backend
     build:
       context: .
-    networks:
-      - myNetwork
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     env_file:
       - .env
+    environment:
+      DB_HOST: booking_db
+      REDIS_HOST: booking_cache
     ports:
       - "8888:8000"
+    volumes:
+      - ./src:/app/src
+      - ./static:/app/static
+    networks:
+      - booking_network
+    command: >
+      sh -c "
+        echo 'Waiting for PostgreSQL and Redis to be ready...' &&
+        sleep 10 &&
+        alembic upgrade head &&
+        python src/main.py
+      "
 
-  booking_celery_worker_service:
+  celery_worker:
     container_name: booking_celery_worker
     build:
       context: .
-    networks:
-      - myNetwork
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
     env_file:
       - .env
+    environment:
+      DB_HOST: postgres
+      REDIS_HOST: redis
+    volumes:
+      - ./src:/app/src
+    networks:
+      - booking_network
     command: ["celery", "--app=src.tasks.celery_app:celery_app", "worker", "-l", "INFO"]
 
-  booking_celery_beat_service:
+  celery_beat:
     container_name: booking_celery_beat
     build:
       context: .
-    networks:
-      - myNetwork
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
     env_file:
       - .env
+    environment:
+      DB_HOST: postgres
+      REDIS_HOST: redis
+    volumes:
+      - ./src:/app/src
+    networks:
+      - booking_network
     command: ["celery", "--app=src.tasks.celery_app:celery_app", "beat", "-l", "INFO"]
 
+  nginx:
+    image: nginx
+    container_name: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - booking_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
 networks:
-  myNetwork:
-    external: true
+  booking_network:
+    driver: bridge

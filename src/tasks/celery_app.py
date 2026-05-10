@@ -12,6 +12,6 @@ celery_app = Celery(
 celery_app.conf.beat_schedule = {
     "Send emails": {
         "task": "send_emails_today_checkin",
-        "schedule": crontab(hour=8),
+        "schedule": crontab(hour=8, minute=00),
     },
 }

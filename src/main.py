@@ -14,9 +14,11 @@ from fastapi.openapi.docs import (
     get_swagger_ui_html,
     get_swagger_ui_oauth2_redirect_html,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
+from redis import asyncio as aioredis
 
 from src.api.hotels import router as hotels_router
 from src.api.auth import router as authorization_router
@@ -26,7 +28,6 @@ from src.api.bookings import router as bookings_router
 from src.api.images import router as images_router
 from src.init import redis_manager
 from src.config import settings
-from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,7 +57,8 @@ async def lifespan(app: FastAPI):
     except psycopg.OperationalError as e:
         logger.error(f"Failed to connect to {settings.DB_HOST}:{settings.DB_PORT}: {e}")
     await redis_manager.connect()
-    FastAPICache.init(RedisBackend(redis_manager.redis_client), prefix="fastapi-cache")  # type: ignore
+    redis = aioredis.from_url(settings.REDIS_URL)
+    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")  # type: ignore
     logger.info("FastAPI Cache initialized")
     yield
     await redis_manager.close()

@@ -3,6 +3,8 @@ import logging
 import redis.asyncio as redis
 from typing import Any
 
+from config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,7 +17,11 @@ class RedisManager:
 
     async def connect(self):
         logger.info(f"Connecting to Redis server on {self.host}:{self.port}")
-        self.redis_client = await redis.Redis(host=self.host, port=self.port, decode_responses=True)
+        self.redis_client = await redis.Redis(
+            host=self.host,
+            port=self.port,
+            password=settings.REDIS_PASSWORD,
+            decode_responses=True)
         logger.info(f"Connected to Redis server on {self.host}:{self.port}")
 
     async def set(self, key: str, value: Any, expire: int | None = None):

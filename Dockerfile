@@ -1,8 +1,8 @@
-FROM python:3.14.4
+FROM python:3.14
+RUN groupadd -r appuser && useradd -r -g appuser appuser
 WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
-
 COPY . .
-
-CMD alembic upgrade head; python src/main.py
+RUN chown -R appuser:appuser /app
+USER appuser

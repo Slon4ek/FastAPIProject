@@ -38,4 +38,6 @@ async def create_booking(user_id: UserIdDep, db: DBDep, booking_data: BookingAdd
         raise HTTPException(
             status_code=409, detail="Не осталось свободных номеров на указанные даты"
         )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=e.args[0])
     return {"message": "Бронирование успешно создано", "booking": booking}

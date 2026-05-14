@@ -3,7 +3,7 @@ from fastapi_cache.decorator import cache
 from fastapi.exceptions import HTTPException
 
 from src.api.dependencies import DBDep
-from src.exceptions import NotFoundError
+from src.exceptions import NotFoundError, IsAlreadyExistsError
 from src.schemas.facility import FacilityAdd
 from src.services.facilities import FacilitiesService
 
@@ -18,12 +18,15 @@ async def get_facilities(db: DBDep):
 
 @router.post("", summary="Добавить удобства")
 async def add_facilities(db: DBDep, data: FacilityAdd):
-    facility = await FacilitiesService(db).add_facility(data)
-    return {"status": "Ok", "facility": facility}
+    try:
+        facility = await FacilitiesService(db).add_facility(data)
+        return {"status": "Ok", "facility": facility}
+    except IsAlreadyExistsError:
+        raise HTTPException(status_code=400, detail="Facility title already exists")
 
 
 @router.delete("/{facility_id}", summary="Удалить удобство")
-async def delete_hotel(facility_id: int, db: DBDep):
+async def delete_facility(facility_id: int, db: DBDep):
     try:
         await FacilitiesService(db).delete_facility(facility_id)
         return {"message": "Deleted facility successfully"}

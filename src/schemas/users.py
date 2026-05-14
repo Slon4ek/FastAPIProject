@@ -9,9 +9,9 @@ class UserLogin(BaseModel):
 
 
 class UserRequestAdd(UserLogin):
-    username: str
-    first_name: str | None = Field(None)
-    last_name: str | None = Field(None)
+    username: str = Field(min_length=1)
+    first_name: str | None = Field(None, min_length=1)
+    last_name: str | None = Field(None, min_length=1)
 
 
 class UserAdd(BaseModel):

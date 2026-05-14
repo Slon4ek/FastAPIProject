@@ -30,7 +30,7 @@ services:
       - "7379:6379"
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_pass}
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -117,18 +117,6 @@ services:
     networks:
       - booking_network
     command: ["celery", "--app=src.tasks.celery_app:celery_app", "beat", "-l", "INFO"]
-
-  nginx:
-    image: nginx
-    container_name: nginx
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - booking_network
 
 volumes:
   postgres_data:

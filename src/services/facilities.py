@@ -14,7 +14,6 @@ class FacilitiesService(BaseService):
         await self.db.commit()
         return facility
 
-
     async def get_all_facilities(self) -> List[Facility]:
         return await self.db.facilities.get_all()
 

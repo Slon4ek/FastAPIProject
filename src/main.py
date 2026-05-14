@@ -5,8 +5,6 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
-import psycopg
-
 import uvicorn
 from fastapi import FastAPI
 from fastapi.openapi.docs import (
@@ -14,11 +12,9 @@ from fastapi.openapi.docs import (
     get_swagger_ui_html,
     get_swagger_ui_oauth2_redirect_html,
 )
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-from redis import asyncio as aioredis
 
 from src.api.hotels import router as hotels_router
 from src.api.auth import router as authorization_router
@@ -27,7 +23,6 @@ from src.api.facilities import router as facilities_router
 from src.api.bookings import router as bookings_router
 from src.api.images import router as images_router
 from src.init import redis_manager
-from src.config import settings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,27 +34,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        logger.info(f"Connecting to PostgreSQL {settings.DB_HOST}:{settings.DB_PORT}")
-        conn = psycopg.connect(
-            host=settings.DB_HOST,
-            port=settings.DB_PORT,
-            user=settings.DB_USER,
-            password=settings.DB_PASSWORD,
-            dbname=settings.DB_NAME,
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT version();")
-        db_version = cursor.fetchone()
-        logger.info(f"Connected to PostgreSQL version {db_version}")
-        cursor.close()
-        conn.close()
-    except psycopg.OperationalError as e:
-        logger.error(f"Failed to connect to {settings.DB_HOST}:{settings.DB_PORT}: {e}")
-    await redis_manager.connect()
-    redis = aioredis.from_url(settings.REDIS_URL)
-    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")  # type: ignore
-    logger.info("FastAPI Cache initialized")
+    if await redis_manager.connect():
+        redis_client = redis_manager.client
+        backend = RedisBackend(redis_client)
+        FastAPICache.init(backend, prefix="fastapi-cache")  # type: ignore
+        logger.info("FastAPICache initialized")
     yield
     await redis_manager.close()
 
@@ -68,16 +47,6 @@ async def lifespan(app: FastAPI):
 #     FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
 
 app = FastAPI(docs_url=None, redoc_url=None, lifespan=lifespan)
-
-# CORS middleware
-origins = settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS else []
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 app.include_router(authorization_router)
 app.include_router(hotels_router)

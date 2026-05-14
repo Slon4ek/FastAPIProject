@@ -1,41 +1,57 @@
 import logging
 
-import redis.asyncio as redis
+import redis.asyncio as aioredis
 from typing import Any
-
-from config import settings
 
 logger = logging.getLogger(__name__)
 
 
 class RedisManager:
-    redis_client: redis.Redis
+    client: aioredis.Redis
 
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, password: str) -> None:
         self.host = host
         self.port = port
+        self.password = password
 
-    async def connect(self):
-        logger.info(f"Connecting to Redis server on {self.host}:{self.port}")
-        self.redis_client = await redis.Redis(
-            host=self.host,
-            port=self.port,
-            password=settings.REDIS_PASSWORD,
-            decode_responses=True)
-        logger.info(f"Connected to Redis server on {self.host}:{self.port}")
+    async def connect(self) -> bool:
+        try:
+            self.client = aioredis.Redis(
+                host=self.host,
+                port=self.port,
+                password=self.password,
+                decode_responses=True,
+                socket_connect_timeout=5,
+                socket_timeout=5,
+                retry_on_timeout=True,
+                max_connections=10,
+            )
+            # Проверка подключения
+            await self.client.ping()
+            logger.info(f"Успешное подключение к Redis {self.host}:{self.port}")
+            return True
+        except aioredis.AuthenticationError as e:
+            logger.error(f"Ошибка аутентификации Redis: {e}")
+            return False
+        except aioredis.ConnectionError as e:
+            logger.error(f"Ошибка подключения к Redis: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Неожиданная ошибка при подключении к Redis: {e}")
+            return False
 
     async def set(self, key: str, value: Any, expire: int | None = None):
         if expire:
-            await self.redis_client.set(key, value, ex=expire)
+            await self.client.set(key, value, ex=expire)
         else:
-            await self.redis_client.set(key, value)
+            await self.client.set(key, value)
 
     async def get(self, key: str) -> Any:
-        return await self.redis_client.get(key)
+        return await self.client.get(key)
 
     async def delete(self, key: str):
-        await self.redis_client.delete(key)
+        await self.client.delete(key)
 
     async def close(self):
-        if self.redis_client is not None:
-            await self.redis_client.close()
+        if self.client is not None:
+            await self.client.close()

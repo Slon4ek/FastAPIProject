@@ -12,9 +12,9 @@ class HotelsOrm(BaseModel):
     __tablename__ = "hotels"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(String(100))
+    title: Mapped[str] = mapped_column(String(100), nullable=False)
     stars: Mapped[int]
-    location: Mapped[str]
+    location: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
 
     rooms: Mapped[list["RoomsOrm"]] = relationship(back_populates="hotel")
     images: Mapped[list["ImagesOrm"]] = relationship(back_populates="hotel")

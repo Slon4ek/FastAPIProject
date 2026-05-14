@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException, Body, Response
 from fastapi.openapi.models import Example
 
-from src.exceptions import AuthenticationError, UserAlreadyExistsException, \
-    EmailAlreadyExistsHTTPException, UsernameAlreadyExistsHTTPException
+from src.exceptions import (
+    AuthenticationError,
+    UserAlreadyExistsException,
+    EmailAlreadyExistsHTTPException,
+    UsernameAlreadyExistsHTTPException,
+)
 from src.api.dependencies import UserIdDep, DBDep
 from src.schemas.users import UserRequestAdd, UserLogin
 from src.services.auth import AuthService

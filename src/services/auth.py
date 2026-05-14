@@ -4,8 +4,13 @@ import jwt
 from pwdlib import PasswordHash
 
 from src.config import settings
-from src.exceptions import AuthenticationError, JWTExpiredError, JWTDecodeError, IsAlreadyExistsError, \
-    UserAlreadyExistsException
+from src.exceptions import (
+    AuthenticationError,
+    JWTExpiredError,
+    JWTDecodeError,
+    IsAlreadyExistsError,
+    UserAlreadyExistsException,
+)
 from src.schemas.users import UserRequestAdd, User, UserAdd, UserLogin
 from src.services.base import BaseService
 from src.utils.db_manager import DBManager
@@ -63,4 +68,3 @@ class AuthService(BaseService):
             raise JWTExpiredError
         except jwt.exceptions.DecodeError:
             raise JWTDecodeError
-

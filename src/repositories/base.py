@@ -2,13 +2,18 @@ import re
 from typing import Sequence, TypeVar, Any, Generic
 
 from pydantic import BaseModel
-from psycopg.errors import UniqueViolation
+from psycopg.errors import UniqueViolation, SyntaxError, ForeignKeyViolation
 from sqlalchemy import select, insert, update, delete, Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy.exc import NoResultFound, IntegrityError
+from sqlalchemy.exc import NoResultFound, IntegrityError, ProgrammingError
 
-from src.exceptions import NotFoundError, IsAlreadyExistsError
+from src.exceptions import (
+    NotFoundError,
+    IsAlreadyExistsError,
+    EmptyDataException,
+    RelationshipError,
+)
 from src.repositories.mappers.base import DataMapper
 from src.database import BaseModel as BaseOrm
 
@@ -78,12 +83,23 @@ class BaseRepository(Generic[DBModelType, SchemaType, MapperType]):
             if isinstance(exc.orig, UniqueViolation):
                 detail = re.findall(r"\((.*?)\)", exc.args[0].split("DETAIL: ")[-1])
                 raise IsAlreadyExistsError(detail) from exc
+            elif isinstance(exc.orig, ForeignKeyViolation):
+                raise RelationshipError() from exc
             else:
                 raise exc
 
     async def add_bulk(self, data: Sequence[SchemaType]) -> None:
         insert_data_stmt = insert(self.model).values([item.model_dump() for item in data])
-        await self.session.execute(insert_data_stmt)
+        try:
+            await self.session.execute(insert_data_stmt)
+        except IntegrityError as exc:
+            if isinstance(exc.orig, UniqueViolation):
+                detail = re.findall(r"\((.*?)\)", exc.args[0].split("DETAIL: ")[-1])
+                raise IsAlreadyExistsError(detail) from exc
+            elif isinstance(exc.orig, ForeignKeyViolation):
+                raise RelationshipError() from exc
+            else:
+                raise exc
 
     async def edit(
         self, data: SchemaType, exclude_unset: bool = False, **filter_by: Any
@@ -93,7 +109,21 @@ class BaseRepository(Generic[DBModelType, SchemaType, MapperType]):
             .filter_by(**filter_by)
             .values(**data.model_dump(exclude_unset=exclude_unset))
         )
-        return await self.session.execute(update_stmt)
+        try:
+            return await self.session.execute(update_stmt)
+        except ProgrammingError as exc:
+            if isinstance(exc.orig, SyntaxError):
+                raise EmptyDataException() from exc
+            else:
+                raise exc
+        except IntegrityError as exc:
+            if isinstance(exc.orig, UniqueViolation):
+                detail = re.findall(r"\((.*?)\)", exc.args[0].split("DETAIL: ")[-1])
+                raise IsAlreadyExistsError(detail) from exc
+            elif isinstance(exc.orig, ForeignKeyViolation):
+                raise RelationshipError() from exc
+            else:
+                raise exc
 
     async def delete(self, **filter_by: Any) -> Result[Any]:
         stmt = delete(self.model).filter_by(**filter_by)

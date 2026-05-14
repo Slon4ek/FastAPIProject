@@ -17,7 +17,10 @@ class Settings(BaseSettings):
 
     @property
     def REDIS_URL(self) -> str:
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
+        if self.REDIS_PASSWORD:
+            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}"
+        else:
+            return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}"
 
     @property
     def DB_URL(self) -> str:
@@ -25,7 +28,6 @@ class Settings(BaseSettings):
 
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
-    CORS_ORIGINS: str = "http://localhost:3000,http://frontend:80"
 
     model_config = SettingsConfigDict(env_file=".env")
 

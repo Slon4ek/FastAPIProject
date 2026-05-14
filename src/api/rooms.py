@@ -10,10 +10,13 @@ from src.exceptions import (
     NotFoundError,
     RoomNotFoundHTTPException,
     HotelNotFoundHTTPException,
+    DateInPastError,
+    EmptyDataException,
+    FacilityNotFoundException,
+    HotelNotFoundError,
 )
 from src.api.dependencies import DBDep
 from src.schemas.rooms import RoomEdit, RoomAddRequest
-from src.services.hotels import HotelsService
 from src.services.rooms import RoomsService
 
 router = APIRouter(prefix="/hotels", tags=["Номера"])
@@ -32,11 +35,15 @@ async def get_hotel_rooms(
     date_to: date = Query(example=date.today() + timedelta(days=7)),
 ):
     try:
-        rooms = await RoomsService(db).get_hotel_rooms(hotel_id, date_from, date_to)
+        rooms = await RoomsService(db, hotel_id).get_hotel_rooms(date_from, date_to)
     except DateEqualError:
         raise HTTPException(status_code=400, detail="Дата заезда не может быть равна дате выезда")
     except DateNotEqualError:
         raise HTTPException(status_code=400, detail="Дата выезда не может быть ранее даты заезда")
+    except DateInPastError:
+        raise HTTPException(status_code=400, detail="Прошедшие даты указывать нельзя.")
+    except HotelNotFoundError:
+        raise HotelNotFoundHTTPException
     return {"rooms": rooms}
 
 
@@ -47,7 +54,9 @@ async def get_hotel_rooms(
 )
 async def get_room(hotel_id: int, room_id: int, db: DBDep):
     try:
-        return await RoomsService(db).get_room(hotel_id, room_id)
+        return await RoomsService(db, hotel_id).get_room(room_id)
+    except HotelNotFoundError:
+        raise HotelNotFoundHTTPException
     except NotFoundError:
         raise RoomNotFoundHTTPException
 
@@ -91,10 +100,11 @@ async def create_room(
     ),
 ):
     try:
-        hotel = await HotelsService(db).get_hotel(hotel_id)
-    except NotFoundError:
+        room = await RoomsService(db, hotel_id).create_room(room_data)
+    except FacilityNotFoundException:
+        raise HTTPException(status_code=404, detail="Удобства не найдены")
+    except HotelNotFoundError:
         raise HotelNotFoundHTTPException
-    room = await RoomsService(db).create_room(hotel.id, room_data)
     return {"message": "Room created", "room": room}
 
 
@@ -105,9 +115,13 @@ async def create_room(
 )
 async def update_room(db: DBDep, room_data: RoomAddRequest, hotel_id: int, room_id: int):
     try:
-        await RoomsService(db).update_room(hotel_id, room_id, room_data)
+        await RoomsService(db, hotel_id).update_room(room_id, room_data)
+    except HotelNotFoundError:
+        raise HotelNotFoundHTTPException
     except NotFoundError:
         raise RoomNotFoundHTTPException
+    except FacilityNotFoundException:
+        raise HTTPException(status_code=404, detail="Удобства не найдены")
     return {"message": "Room updated"}
 
 
@@ -118,10 +132,16 @@ async def update_room(db: DBDep, room_data: RoomAddRequest, hotel_id: int, room_
 )
 async def partially_update_room(db: DBDep, room_data: RoomEdit, hotel_id: int, room_id: int):
     try:
-        await RoomsService(db).update_room(hotel_id, room_id, room_data, True)
+        await RoomsService(db, hotel_id).update_room(room_id, room_data, True)
+        return {"message": "Room updated"}
+    except HotelNotFoundError:
+        raise HotelNotFoundHTTPException
     except NotFoundError:
         raise RoomNotFoundHTTPException
-    return {"message": "Room updated"}
+    except EmptyDataException:
+        raise HTTPException(status_code=400, detail="Нет ни одного поля для изменения")
+    except FacilityNotFoundException:
+        raise HTTPException(status_code=404, detail="Удобства не найдены")
 
 
 @router.delete(
@@ -131,7 +151,9 @@ async def partially_update_room(db: DBDep, room_data: RoomEdit, hotel_id: int, r
 )
 async def delete_room(db: DBDep, hotel_id: int, room_id: int):
     try:
-        await RoomsService(db).delete_room(hotel_id, room_id)
+        await RoomsService(db, hotel_id).delete_room(room_id)
+    except HotelNotFoundError:
+        raise HotelNotFoundHTTPException
     except NotFoundError:
         raise RoomNotFoundHTTPException
     return {"message": "Room deleted"}

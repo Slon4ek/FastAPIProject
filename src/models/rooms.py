@@ -14,8 +14,8 @@ class RoomsOrm(BaseModel):
     __tablename__ = "rooms"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    hotel_id: Mapped[int] = mapped_column(ForeignKey("hotels.id"))
-    title: Mapped[str]
+    hotel_id: Mapped[int] = mapped_column(ForeignKey("hotels.id", ondelete="CASCADE"))
+    title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str | None]
     price: Mapped[int]
     quantity: Mapped[int]

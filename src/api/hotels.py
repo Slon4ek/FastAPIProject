@@ -9,6 +9,8 @@ from src.exceptions import (
     DateNotEqualError,
     NotFoundError,
     HotelNotFoundHTTPException,
+    DateInPastError,
+    EmptyDataException,
 )
 from src.schemas.hotels import HotelAdd, HotelPatch
 from src.api.dependencies import PaginationDep, DBDep
@@ -30,9 +32,9 @@ async def get_hotels(
     date_to: date | None = Query(
         None, description="Дата выезда", example=date.today() + timedelta(days=7)
     ),
-    stars: int | None = Query(None, description="Количество звезд"),
-    title: str | None = Query(None, description="Название отеля"),
-    location: str | None = Query(None, description="Адрес отеля"),
+    stars: int | None = Query(None, description="Количество звезд", ge=1, le=5),
+    title: str | None = Query(None, description="Название отеля", min_length=1),
+    location: str | None = Query(None, description="Адрес отеля", min_length=1),
 ):
     try:
         return await HotelsService(db).get_hotels(
@@ -47,6 +49,8 @@ async def get_hotels(
         raise HTTPException(status_code=400, detail="Дата заезда не может быть равна дате выезда")
     except DateNotEqualError:
         raise HTTPException(status_code=400, detail="Дата выезда не может быть ранее даты заезда")
+    except DateInPastError:
+        raise HTTPException(status_code=400, detail="Прошедшие даты указывать нельзя.")
 
 
 @router.get("/{hotel_id}", summary="Получить отель по id")
@@ -105,3 +109,5 @@ async def partial_update_hotel(hotel_id: int, hotel_data: HotelPatch, db: DBDep)
         return {"message": "Отель успешно обновлен"}
     except NotFoundError:
         raise HotelNotFoundHTTPException
+    except EmptyDataException:
+        raise HTTPException(status_code=400, detail="Нет ни одного поля для изменения")

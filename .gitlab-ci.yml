@@ -1,0 +1,64 @@
+default:
+  before_script:
+    - cp ${ENV} .env
+    - cp ${ENV_TEST} .env-test
+    - docker network inspect booking_network >/dev/null 2>&1 || docker network create booking_network
+
+stages:
+  - build
+  - lint
+  - migrations
+  - test
+  - deploy
+
+build-job:
+  stage: build
+  script:
+    - docker build -t booking_api_image .
+  artifacts:
+    paths:
+      - .env
+      - .env-test
+    expire_in: 1 hour
+
+ruff-check-job:
+  stage: lint
+  needs: [build-job]
+  script:
+    - docker run --rm booking_api_image ruff check src/
+
+ruff-format-job:
+  stage: lint
+  needs: [build-job]
+  script:
+    - docker run --rm booking_api_image ruff format --check src/
+
+migrations-job:
+  stage: migrations
+  needs: [build-job, ruff-check-job, ruff-format-job]
+  script:
+    - docker compose -f docker-compose-ci.yml up -d postgres_srv
+    - sleep 15
+    - timeout 90 sh -c 'until docker exec booking_db pg_isready -U ${DB_USER:-postgres}; do sleep 3; done'
+    - docker compose -f docker-compose-ci.yml run --rm backend alembic upgrade head
+    - docker compose -f docker-compose-ci.yml down
+
+tests-job:
+  stage: test
+  needs: [migrations-job]
+  script:
+    - REDIS_PASS=$(grep REDIS_PASSWORD .env | cut -d= -f2)
+    - docker compose -f docker-compose-ci.yml up -d postgres_srv redis
+    - sleep 15
+    - timeout 90 sh -c 'until docker exec booking_db pg_isready -U ${DB_USER:-postgres}; do sleep 3; done'
+    - timeout 45 sh -c "until docker exec booking_cache redis-cli -a $REDIS_PASS ping | grep -q PONG; do sleep 3; done"
+    - docker compose -f docker-compose-ci.yml run --rm backend pytest -v --cov=src --cov-report=term-missing
+    - docker compose -f docker-compose-ci.yml down
+
+deploy-job:
+  stage: deploy
+  needs: [tests-job]
+  script:
+    - docker compose -f docker-compose-ci.yml up -d
+    - docker exec booking_nginx nginx -s reload
+  when: manual

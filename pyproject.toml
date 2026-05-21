@@ -1,2 +1,15 @@
 [tool.ruff]
 line-length = 100
+
+[tool.pyright]
+include = ["src"]
+exclude = [
+    "**/migrations/**",
+    "**/static/**",
+    "**/__pycache__/**",
+    "**/.pytest_cache/**",
+    "**/.ruff_cache/**",
+    "**/*.pyc"
+]
+pythonVersion = "3.14"
+typeCheckingMode = "basic"
